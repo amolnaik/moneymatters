@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block js %}
+<script src="{{ url_for('static', filename='js/jquery.tablesorter.min.js') }}"></script>
+<script type="text/javascript" id="js">
+$(document).ready(function() {
+  var timeExtraction = function(node) {
+    if ($(node).attr('data-time-in-seconds') !== undefined) {
+      return '-' + node.getAttribute('data-time-in-seconds');
+    } else {
+      return node.innerHTML;
+    }
+  }
+  $("#account-overview-table").tablesorter({
+    textExtraction: timeExtraction
+  });
+});
+</script>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/table.css') }}">
+{% endblock %}
+
+{% block new_account %}
+  <a class="popover-link" href="{{ url_for('main.new_account') }}">Create Account</a>
+{% endblock %}
+
+{% block body %}
+<section class="header">
+  <h2 class="title">Account overview</h2>
+  <div class="row">
+    <div class="u-full-width">
+      <!-- <h6 class="docs-header account-overview">All your Accounts</h6> -->
+      <table id="account-overview-table" class="tablesorter">
+        <thead>
+          <tr>
+            <th style="width:25%">Account Name</th>
+            <th style="width:25%"> Transactions </th>
+            <th style="width:25%"> Completed</th>
+            <th style="width:25%"> Closing Balance </th>
+          </tr>
+          <tbody>
+            {% for account in current_user.accounts %}
+              <tr>
+                <td><a href="{{ url_for('main.account', name=account.name) }}">{{ account.name }}</a></td>
+                <td><a href="{{ url_for('main.show_log', name=account.name) }}">{{ account.total_transactions_count }}</a></td>
+                <td> {{ account.completed_transactions_count }} </td>
+                <td> {{ account.closing_balance }} </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </thead>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

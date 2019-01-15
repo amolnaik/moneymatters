@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block js %}
+<script src="{{ url_for('static', filename='js/jquery.tablesorter.min.js') }}"></script>
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css">
+<!-- script src="//code.jquery.com/jquery-1.10.2.js"></script-->
+<!--script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script-->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+			  integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
+			  crossorigin="anonymous"></script>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/3.5.1/css/tabulator_simple.min.css" rel="stylesheet">
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/3.5.1/js/tabulator.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.21.0/moment.min.js" type="text/javascript"></script>
+<script>
+  $(function() {
+    $( ".dtpick" ).datepicker({ dateFormat: 'dd/mm/yy'}).datepicker("setDate", "0");;
+  });
+</script>
+{% endblock %}
+
+{% block logger %}
+<a class="popover-link" href="{{ url_for('main.account', name=account.name) }}">Logger</a>
+{% endblock %}
+
+{% block dashboard %}
+<a class="popover-link" href="{{ url_for('main.show_charts', name=account.name) }}">Dashboard</a>
+{% endblock %}
+
+
+{% block summary %}
+<a class="popover-link" href="{{ url_for('main.show_log', name=account.name) }}">Summary</a>
+{% endblock %}
+
+{% block body %}
+<section class="header">
+  <h2 class="title">Scheduled Transactions</h2>
+  <h6 class="docs-header transaction-overview">Create New Scheduled Transaction</h6>
+  <div id = "transactionform" class="row">
+    {% for field in form.errors %}
+      {% for error in form.errors[field] %}
+          <div class="alert alert-error">
+              <strong>{{field }}</strong> {{error}}.
+          </div>
+      {% endfor %}
+    {% endfor %}
+    <form action="{{ url_for('main.new_scheduled_transaction', name=account.name) }}" method="post">
+      {{ form.hidden_tag() }}
+        <div class="row">
+          <div class="six columns">
+            <div class="row">
+              <div class="six columns">
+                {{ form.frequency(class_="u-full-width", placeholder="Frequency") }}
+              </div>
+              <div class="three columns">
+                {{ form.interval(class_="u-full-width", placeholder="Interval") }}
+              </div>
+              <div class="three columns">
+                {{ form.day(class_="u-full-width", placeholder="Day") }}
+              </div>
+            </div>
+          </div>
+          <div class="six columns">
+            <div class="row">
+                {{ form.start(class_='dtpick') }}
+                {{ form.end(class_='dtpick') }}
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="six columns">
+            <div class="row">
+              <div class="six columns">
+                {{ form.amount(class_="u-full-width", placeholder="amount", value="") }}
+              </div>
+							<div class="six columns">
+								 {{ form.category(class_="u-full-width", placeholder="category", value="") }}
+							</div>
+            </div>
+            <div class="row">
+                <div class="six columns">
+                  {{ form.subcategory(class_="u-full-width", placeholder="subcategory", value="") }}
+                </div>
+                <div class="six columns">
+									{{ form.type(class_="u-full-width", placeholder="type", value="") }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="six columns">
+                  {{ form.tag(class_="u-full-width", placeholder="tag", value="") }}
+                </div>
+                <div class="six columns">
+                  {{ form.payee(class_="u-full-width", placeholder="payee", value="") }}
+                </div>
+            </div>
+            			{{ form.description(class_="u-full-width", placeholder="description", value="") }}
+            <div class="row">
+                <div class="six columns">
+                  <span class="label-body">Activate</span>
+                  {{ form.active()}}
+                </div>
+                <div class="six columns">
+                  {{ form.submit(class="button button-primary", value="Schedule") }}
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <h6 class="docs-header transaction-overview">All Your Scheduled Transactions</h6>
+
+    <div class="u-full-width">
+      <table class="u-full-width">
+        <div id="st-table"></div>
+      </table>
+    </div>
+  </div>
+
+
+  <script>
+
+    $("#st-table").tabulator({
+      height:"100%",
+      layout:"fitColumns",
+      tooltips:false,
+      placeholder:"No Data Set",
+      pagination:"local",
+      paginationSize:5,
+      columns:[
+          // put id field here to pass back to server
+          {title:"Created", field:"created_on", sorter:"date", formatter:function(cell, formatterParams){
+              return moment(cell.getValue()).format("DD/MM/YYYY"); //return the contents of the cell;
+          },},
+          {title:"Frequency", field:"frequency", editor: 'input'},
+          {title:"Interval", field:"interval", editor:'number'},
+          {title:"Day", field:"day", editor:'number'},
+          {title:"Start", field:"start", editor:'input', formatter:function(cell, formatterParams){
+              return moment(cell.getValue()).format("DD/MM/YYYY"); //return the contents of the cell;
+          }},
+          {title:"End", field:"end", editor:'input', formatter:function(cell, formatterParams){
+              return moment(cell.getValue()).format("DD/MM/YYYY"); //return the contents of the cell;
+          }},
+          {title:"Amount", field:"amount", editor:"number", formatter:"money"},
+          {title:"Description", field:"description", editor:'input'},
+          {title:"Approved", field:"approved", editor:'input', formatter:function(cell, formatterParams){
+              return moment(cell.getValue()).format("DD/MM/YYYY"); //return the contents of the cell;
+          }},
+          {title:"Active", field:"active", editor:'input'},
+      ],
+
+    dataLoaded:function(data){
+       if($("#st-table").tabulator("getPageMax")){
+           $(".tabulator-footer").hide();
+       }else{
+           $(".tabulator-footer").show();
+       }
+     },
+
+     cellEdited:function(cell){
+         //This callback is called any time a cell is edidted
+ 				console.log(JSON.stringify(cell.getData()))
+ 				//var test = { "name":"John", "age":30, "city":"New York"};
+ 				var test = cell.getData();
+ 				$.ajax({
+ 	            url: '{{ url_for('main.new_scheduled_transaction', name=account.name) }}',
+ 		          data: JSON.stringify(test),
+ 	            type: 'POST',
+ 							contentType: 'application/json;charset=UTF-8',
+ 	            success: function(response) {
+ 	                console.log('success');
+ 	            },
+ 	            error: function(error) {
+ 	                console.log(error);
+ 	            }
+ 	        });
+     },
+
+
+
+
+  });
+
+  $("#st-table").tabulator("setData", JSON.parse('{{ data | safe}}'));
+  console.log(JSON.parse('{{ data | safe}}'))
+  </script>
+
+</section>
+{% endblock %}

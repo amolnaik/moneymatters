@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block js %}
+
+<script src="{{ url_for('static', filename='js/money.js') }}"></script>
+{% endblock %}
+
+{% block body %}
+<section class="header">
+  <h2 class="title">{{account.name}}</h2>
+  <div class="row">
+    <div class="three columns value-prop"></div>
+    <div class="six columns">
+      {% for field, errors in form.errors.iteritems() %}
+      <div class="errors">
+        {{ form[field].label }}: {{ ', '.join(errors) }}
+      </div>
+      {% endfor %}
+      <form method=post>
+        {{ form.hidden_tag() }}
+        <dl>
+          <dd>{{ form.date(class_='datepicker', placeholder="date") }}
+          <dd>{{ form.amount(class_="u-full-width", placeholder="amount", value="") }}
+          <dd>{{ form.type(class_="u-full-width", placeholder="type", value="") }}
+          <dd>{{ form.description(class_="u-full-width", placeholder="description", value="") }}
+          <dd>{{ form.category(class_="u-full-width", placeholder="category", value="") }}
+          <dd>{{ form.tag(class_="u-full-width", placeholder="tag", value="") }}
+          <dd>{{ form.payee(class_="u-full-width", placeholder="payee", value="") }}
+          <dd>{{ form.status.label }} {{ form.status()}}
+          <dd>{{ form.submit }}
+        </dl>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

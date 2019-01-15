@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block js %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script
+			  src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+			  integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
+			  crossorigin="anonymous"></script>
+<link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/3.5.1/css/tabulator_simple.min.css" rel="stylesheet">
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/3.5.1/js/tabulator.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.21.0/moment.min.js" type="text/javascript"></script>
+<script>
+  $(function() {
+    $( ".dtpick" ).datepicker({ dateFormat: 'dd/mm/yy'}).datepicker("setDate", "0"); });
+</script>
+{% endblock %}
+
+{% block logger %}
+<a class="popover-link" href="{{ url_for('main.account', name=account.name) }}">Logger</a>
+{% endblock %}
+
+{% block dashboard %}
+<a class="popover-link" href="{{ url_for('main.show_charts', name=account.name) }}">Dashboard</a>
+{% endblock %}
+
+{% block download %}
+<a button class="popover-link" id="download-csv">Download</a>
+{% endblock %}
+
+{% block scheduled %}
+<a class="popover-link" href="{{ url_for('main.new_scheduled_transaction', name=account.name) }}">Templates</a>
+{% endblock %}
+
+{% block body %}
+
+<section class="header">
+  <h2 class="title">Transaction Table</h2>
+	<h6 class="docs-header transaction-overview">Filter Your Transactions</h6>
+
+		<div class="row">
+			<div class="six columns"align="right">
+				<input class='dtpick' id="filter-from-value" type="text" placeholder="date from">
+				<input class='dtpick' id="filter-to-value" type="text" placeholder="date to">
+			</div>
+			<div class="six columns"align="left">
+				<input id="filter-amount-ge-value" type="text" placeholder="greater than equal to">
+				<input id="filter-amount-le-value" type="text" placeholder="less than equal to">
+			</div>
+		</div>
+		<div class="row">
+			<div class="six columns" align="right">
+				<input id="filter-type-value" type="text" placeholder="type like">
+				<input id="filter-category-value" type="text" placeholder="category like">
+			</div>
+			<div class="six columns" align="left">
+				<input id="filter-tags-value" type="text" placeholder="tags like">
+				<input id="filter-payee-value" type="text" placeholder="payee like">
+			</div>
+	</div>
+	<div class="row">
+			<div class="six columns" align="right">
+					<input id="filter-description-value" type="text" placeholder="description like">
+					<input id="filter-status-value" type="text" placeholder="status like">
+			</div>
+			<div class="six columns" align="left">
+				<button class="button" id="filter-set">Filter</button>
+				<button class="button" id="filter-clear">Clear</button>
+				<button class="button" id="del-row">Delete Row</button>
+			</div>
+	</div>
+
+	<h6 class="docs-header transaction-overview">All Your Transactions</h6>
+
+	<div class="u-full-width">
+		  <table class="u-full-width">
+				<div id="example-table3"></div>
+			<table>
+	</div>
+
+	<h6 class="docs-header transaction-overview">Transaction Summary</h6>
+	<table class="u-full-width">
+	<thead>
+		<tr>
+			<th>Field</th>
+			<th>Count</th>
+			<th>Sum</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>Filtered Transactions</td>
+			<td id="filtered_transactions_count"></td>
+			<td id="total_filtered_amount"></td>
+		</tr>
+	</tbody>
+	</table>
+
+
+<script>
+
+function removeActiveFilter(filters, field, type){
+	if(filters.some(e => e.field == field)){
+		i = $.map(filters, function(obj, index){
+			if(obj.type == type){
+					$("#example-table3").tabulator("removeFilter", field, type, obj.value);
+					return index
+			}
+		})
+	}
+}
+
+//Trigger setFilter function with correct parameters
+function updateFilter(){
+		if($("#filter-amount-ge-value").val()) {
+				removeActiveFilter($("#example-table3").tabulator("getFilters"), "amount", ">")
+				$("#example-table3").tabulator("addFilter", "amount", ">", $("#filter-amount-ge-value").val());
+		}
+
+		if($("#filter-amount-le-value").val()) {
+			removeActiveFilter($("#example-table3").tabulator("getFilters"), "amount", "<")
+			$("#example-table3").tabulator("addFilter", "amount", "<", $("#filter-amount-le-value").val());
+		}
+
+		if($("#filter-from-value").val()) {
+			//console.log(moment($("#filter-from-value").val(), 'DD/MM/YYYY', true).format())
+			var d = moment($("#filter-from-value").val(), 'DD/MM/YYYY', true).toISOString();
+			removeActiveFilter($("#example-table3").tabulator("getFilters"), "date", ">")
+			console.log(d)
+			$("#example-table3").tabulator("addFilter", "date", ">", d);
+		}
+
+		if($("#filter-to-value").val()) {
+			removeActiveFilter($("#example-table3").tabulator("getFilters"), "date", "<")
+			var e = moment($("#filter-to-value").val(), 'DD/MM/YYYY', true).toISOString();
+			console.log(e)
+			$("#example-table3").tabulator("addFilter", "date", "<", e);
+		}
+
+		if($("#filter-type-value").val()) {
+			removeActiveFilter($("#example-table3").tabulator("getFilters"), "typeid", "=")
+			$("#example-table3").tabulator("addFilter", "type", "=", $("#filter-type-value").val());
+		}
+
+		if($("#filter-category-value").val()) {
+			removeActiveFilter($("#example-table3").tabulator("getFilters"), "category", "like")
+			$("#example-table3").tabulator("addFilter", "category", "like", $("#filter-category-value").val());
+		}
+
+		if($("#filter-tags-value").val()){
+			removeActiveFilter($("#example-table3").tabulator("getFilters"), "tag", "in")
+			$("#example-table3").tabulator("addFilter", "tag", "in", $("#filter-tags-value").val().split(", "));
+		}
+
+		if($("#filter-payee-value").val()){
+			removeActiveFilter($("#example-table3").tabulator("getFilters"), "payee", "like")
+			$("#example-table3").tabulator("addFilter", "payee", "like", $("#filter-payee-value").val());
+		}
+
+		if($("#filter-description-value").val()){
+			removeActiveFilter($("#example-table3").tabulator("getFilters"), "description", "like")
+			$("#example-table3").tabulator("addFilter", "description", "like", $("#filter-description-value").val());
+		}
+
+		if($("#filter-status-value").val()){
+			removeActiveFilter($("#example-table3").tabulator("getFilters"), "status", "=")
+			$("#example-table3").tabulator("addFilter", "status", "=", ($("#filter-status-value").val() == "true"));
+		}
+
+		console.log($("#example-table3").tabulator("getFilters"))
+		//var data = $("#example-table").tabulator("getData");
+		//console.log(data)
+}
+
+$("#filter-set").click(updateFilter);
+
+//Delete row on "Delete Row" button click
+$("#del-row").click(function(){
+    //$("#example-table3").tabulator("deleteRow", 1);
+		//console.log(document.getElementById("del-row").value)
+		var rowid = {'tid': document.getElementById("del-row").value }
+
+		$.ajax({
+					url: '{{ url_for('main.delete_data', name=account.name) }}',
+					data: JSON.stringify(rowid),
+					type: 'POST',
+					contentType: 'application/json;charset=UTF-8',
+					success: function(response) {
+							console.log('success');
+							$("#example-table3").tabulator("setData", "{{ url_for('main.data', name=account.name) }}");
+					},
+					error: function(error) {
+							console.log(error);
+					}
+			});
+
+
+});
+
+//Clear filters on "Clear Filters" button click
+$("#filter-clear").click(function(){
+    $("#filter-from-value").val("");
+		$("#filter-to-value").val("");
+		$("#filter-amount-ge-value").val("");
+		$("#filter-amount-le-value").val("");
+		$("#filter-type-value").val("");
+		$("#filter-category-value").val("");
+		$("#filter-tags-value").val("");
+		$("#filter-payee-value").val("");
+		$("#filter-description-value").val("");
+		$("#filter-status-value").val("");
+    $("#example-table3").tabulator("clearFilter");
+});
+
+//Build Tabulator
+$("#example-table3").tabulator({
+
+		height:"100%",
+		//layout:"fitColumns",
+		index: "tid",
+		tooltips:false,
+    placeholder:"No Data Set",
+		pagination:"local",
+		paginationSize:20,
+		selectable:true,
+    columns:[
+				// put id field here to pass back to server
+			  {title:"Date", field:"date", sorter:"date", formatter:function(cell, formatterParams){
+						return moment(cell.getValue()).format("DD/MM/YYYY"); //return the contents of the cell;
+				}},
+        {title:"Amount", field:"amount", editor:'number', formatter:"money", bottomCalc:"sum", bottomCalcParams:{precision:2}},
+        {title:"Category", field:"category", editor:'input'},
+				{title:"Subcategory", field:"subcategory", editor:'input'},
+        {title:"Description", field:"description", editor:'input'},
+        {title:"Payee", field:"payee", editor:'input'},
+        {title:"Status", field:"status", editor:'input'},
+        {title:"Tag", field:"tag", editor:"input"},
+        {title:"Type", field:"type", editor:'number'}, // ToDo: pre-selected strings
+    ],
+
+		rowSelected:function(row){
+        row.getElement().css({"background-color":"#A9A9A9"});
+				document.getElementById("del-row").value = row.getIndex()
+    },
+
+		rowDeselected:function(row){
+				row.getElement().css({"background-color":""});
+
+    },
+
+		dataLoading:function(data){
+        //data - all data loaded into the table
+				total = 0
+				for (i = 0; i < data.length; i++) {  //loop through the array
+    				total += data[i].amount;  //Do the math!
+				}
+    },
+
+		dataFiltered:function(filters, rows){
+        //filters - array of filters currently applied
+        //rows - array of row components that pass the filters
+				total_filtered = 0
+				for(i = 0; i < rows.length;i++){
+					var data = rows[i].getData(); //get data object for row
+					total_filtered += data.amount;  //Do the math!
+				}
+				document.getElementById("total_filtered_amount").innerHTML = total_filtered.toFixed(2);
+				document.getElementById("filtered_transactions_count").innerHTML = rows.length;
+    },
+
+		cellEdited:function(cell){
+        //This callback is called any time a cell is edidted
+				//var test = { "name":"John", "age":30, "city":"New York"};
+				var test = cell.getData();
+				$.ajax({
+	            url: '{{ url_for('main.set_data', name=account.name) }}',
+		          data: JSON.stringify(test),
+	            type: 'POST',
+							contentType: 'application/json;charset=UTF-8',
+	            success: function(response) {
+	                console.log('success');
+	            },
+	            error: function(error) {
+	                console.log(error);
+	            }
+	        });
+    },
+
+});
+
+$("#example-table3").tabulator("setData", "{{ url_for('main.data', name=account.name) }}");
+
+$("#download-csv").click(function(){
+    $("#example-table3").tabulator("download", "csv", "data.csv");
+});
+
+</script>
+</section>
+{% endblock %}

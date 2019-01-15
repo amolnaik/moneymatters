@@ -1,0 +1,878 @@
+{% extends "base.html" %}
+{% block js %}
+<link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+<script src="//code.jquery.com/jquery-1.10.2.js"></script>
+<script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+<script src="https://code.highcharts.com/modules/export-data.js"></script>
+<script src="https://code.highcharts.com/modules/streamgraph.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/css-toggle-switch@latest/dist/toggle-switch.css" />
+
+<script>
+  $(function() {
+    $( ".dtpick" ).datepicker({ dateFormat: 'dd/mm/yy'}).blur();
+  });
+
+  $(document).ready(function(){
+    $(this).scrollTop(0);
+    GetChartData('y');
+  });
+
+</script>
+{% endblock %}
+
+{% block logger %}
+<a class="popover-link" href="{{ url_for('main.account', name=account.name) }}">Logger</a>
+{% endblock %}
+
+{% block summary %}
+<a class="popover-link" href="{{ url_for('main.show_log', name=account.name) }}">Summary</a>
+{% endblock %}
+
+{% block scheduled %}
+<a class="popover-link" href="{{ url_for('main.new_scheduled_transaction', name=account.name) }}">Templates</a>
+{% endblock %}
+
+{% block body %}
+
+<section class="header">
+  <h2 class="title"> Account Summary </h2>
+  <div class="row">
+    <div class="three columns value-prop"></div>
+  </div>
+</section>
+<div class="eight columns">
+  <fieldset>
+    <legend>Show transactions for</legend>
+    <div class="switch-toggle switch-candy switch-candy-blue">
+      <input id="all_by_year" name="view-y" type="radio">
+      <label for="all_by_year" onclick="GetChartData('y')">Years</label>
+      <input id="all_by_months" name="view-m" type="radio">
+      <label for="all_by_months" onclick="GetChartData('m')">Months</label>
+      <input id="last_12_months" name="view-12m" type="radio">
+      <label for="last_12_months" onclick="GetChartData('l12m')">Last 12 Months</label>
+      <input id="last_3_months" name="view-3m" type="radio">
+      <label for="last_3_months" onclick="GetChartData('l3m')">Last 3 Months</label>
+      <a></a>
+    </div>
+  </fieldset>
+</div>
+<div id="container" style="width:100%; height:600px;"></div>
+<div class="row">
+  <div class="six columns">
+  </div>
+  <div class="six columns">
+    <fieldset>
+      <legend>Show transactions by</legend>
+      <div class="switch-toggle switch-candy switch-candy-blue">
+        <input id="tags" name="view-t" type="radio">
+        <label for="tags" onclick="GetTagData()">Tags</label>
+        <input id="category" name="view-c" type="radio">
+        <label for="category" onclick="GetCategoryData()">Category</label>
+        <input id="subcategory" name="view-s" type="radio">
+        <label for="subcategory" onclick="GetSubcategoryData()">Subcategory</label>
+        <a></a>
+      </div>
+    </fieldset>
+  </div>
+</div>
+<div id="container_stacked_bar_chart" style="width:100%; height:800px;"></div>
+<div id="container_pie_chart" style="width:100%; height:600px;"></div>
+
+<script>
+
+  function GetChartData(f){
+    var set_frequency = '';
+    $.getJSON("{{ url_for('main.show_chart_data', name=account.name) }}", { frequency : f},
+    function(data) {
+      var all_data = data;
+      set_frequency = all_data['frequency'];
+      var balance = all_data['balance'];
+      var aggregated_tags = all_data['by_tags'];
+      var aggregated_cats = all_data['by_category'];
+      var aggregated_subcats = all_data['by_subcategory'];
+      PlotTimeSeries(balance);
+      GetTagData();
+      //PlotByCategories(aggregated_cats);
+      //PlotBySubcategories(aggregated_subcats);
+    });
+    document.getElementById('all_by_year').checked = false;
+    document.getElementById('all_by_months').checked = false;
+    document.getElementById('last_12_months').checked = false;
+    document.getElementById('last_3_months').checked = false;
+    switch(set_frequency) {
+      case 'y':
+        document.getElementById('all_by_year').checked = true;
+        break;
+      case 'm':
+        document.getElementById('all_by_months').checked = true;
+        break;
+      case 'l12m':
+        document.getElementById('last_12_months').checked = true;
+        break;
+      case 'l3m':
+          document.getElementById('last_3_months').checked = true;
+        break;
+    }
+  };
+
+  function GetTagData(){
+
+    var f = ' ';
+    if (document.getElementById('all_by_year').checked){
+        f = 'y';
+    }
+    else if (document.getElementById('all_by_months').checked){
+      f  = 'm';
+    }
+    else if (document.getElementById('last_12_months').checked){
+        f = 'l12m';
+    }
+    else if (document.getElementById('last_3_months').checked){
+      f  = 'l3m';
+    }
+    else{
+      console.log("Did not find a match!")
+      f  = 'y';
+    }
+    //document.getElementById('all_by_year').checked = false;
+    //document.getElementById('all_by_months').checked = false;
+    //document.getElementById('last_12_months').checked = false;
+    //document.getElementById('last_3_months').checked = false;
+    $.getJSON("{{ url_for('main.show_chart_data', name=account.name) }}", {
+      frequency : f,
+      date_from: $('input[name="date_from"]').val(),
+      date_to  : $('input[name="date_to"]').val(),
+      amount_ge: $('input[name="amount_ge"]').val(),
+      amount_le: $('input[name="amount_le"]').val(),
+      category_like: $('input[name="category_like"]').val(),
+      tags_like: $('input[name="tags_like"]').val(),
+      description_like: $('input[name="description_like"]').val()
+    },
+    function(data) {
+      var all_data = data;
+      var set_frequency =  all_data['frequency'];
+      var aggregated_tags = all_data['by_tags'];
+      switch(set_frequency) {
+        case 'y':
+          document.getElementById('all_by_year').checked = true;
+          break;
+        case 'm':
+          document.getElementById('all_by_months').checked = true;
+          break;
+        case 'l12m':
+          document.getElementById('last_12_months').checked = true;
+          break;
+        case 'l3m':
+            document.getElementById('last_3_months').checked = true;
+          break;
+        default:
+          console.log("Could not set Frequency!")
+          console.log(set_frequency)
+      }
+      PlotByTags(aggregated_tags);
+    });
+    document.getElementById('tags').checked = true;
+    document.getElementById('category').checked = false;
+    document.getElementById('subcategory').checked = false;
+  };
+
+  function GetCategoryData(){
+
+    var f = ' ';
+    if (document.getElementById('all_by_year').checked){
+        f = 'y';
+    }
+    else if (document.getElementById('all_by_months').checked){
+      f  = 'm';
+    }
+    else if (document.getElementById('last_12_months').checked){
+        f = 'l12m';
+    }
+    else if (document.getElementById('last_3_months').checked){
+      f  = 'l3m';
+    }
+    else{
+      console.log("Did not find a match for Frequency!")
+      f = 'y'
+    }
+    document.getElementById('all_by_year').checked = false;
+    document.getElementById('all_by_months').checked = false;
+    document.getElementById('last_12_months').checked = false;
+    document.getElementById('last_3_months').checked = false;
+    $.getJSON("{{ url_for('main.show_chart_data', name=account.name) }}",
+    { frequency : f,
+      date_from: $('input[name="date_from"]').val(),
+      date_to  : $('input[name="date_to"]').val(),
+      amount_ge: $('input[name="amount_ge"]').val(),
+      amount_le: $('input[name="amount_le"]').val(),
+      category_like: $('input[name="category_like"]').val(),
+      tags_like: $('input[name="tags_like"]').val(),
+      description_like: $('input[name="description_like"]').val()
+    },
+    function(data) {
+      var all_data = data;
+      var set_frequency =  all_data['frequency'];
+      var aggregated_cats = all_data['by_category'];
+      switch(set_frequency) {
+        case 'y':
+          document.getElementById('all_by_year').checked = true;
+          break;
+        case 'm':
+          document.getElementById('all_by_months').checked = true;
+          break;
+        case 'l12m':
+          document.getElementById('last_12_months').checked = true;
+          break;
+        case 'l3m':
+          document.getElementById('last_3_months').checked = true;
+          break;
+        default:
+          console.log("Could not set Frequency!")
+          console.log(set_frequency)
+      }
+      PlotByCategories(aggregated_cats);
+    });
+    document.getElementById('tags').checked = false;
+    document.getElementById('category').checked = true;
+    document.getElementById('subcategory').checked = false;
+  };
+
+  function GetSubcategoryData(){
+
+    var f = ' ';
+    if (document.getElementById('all_by_year').checked){
+        f = 'y';
+    }
+    else if (document.getElementById('all_by_months').checked){
+      f  = 'm';
+    }
+    else if (document.getElementById('last_12_months').checked){
+        f = 'l12m';
+    }
+    else if (document.getElementById('last_3_months').checked){
+      f  = 'l3m';
+    }
+    else{
+      f = 'y'
+    }
+    document.getElementById('all_by_year').checked = false;
+    document.getElementById('all_by_months').checked = false;
+    document.getElementById('last_12_months').checked = false;
+    document.getElementById('last_3_months').checked = false;
+    $.getJSON("{{ url_for('main.show_chart_data', name=account.name) }}",
+    { frequency : f,
+      date_from: $('input[name="date_from"]').val(),
+      date_to  : $('input[name="date_to"]').val(),
+      amount_ge: $('input[name="amount_ge"]').val(),
+      amount_le: $('input[name="amount_le"]').val(),
+      category_like: $('input[name="category_like"]').val(),
+      tags_like: $('input[name="tags_like"]').val(),
+      description_like: $('input[name="description_like"]').val()
+    },
+    function(data) {
+      var all_data = data;
+      var set_frequency =  all_data['frequency'];
+      var aggregated_subcats = all_data['by_subcategory'];
+      switch(set_frequency) {
+        case 'y':
+          document.getElementById('all_by_year').checked = true;
+          break;
+        case 'm':
+          document.getElementById('all_by_months').checked = true;
+          break;
+        case 'l12m':
+          document.getElementById('last_12_months').checked = true;
+          break;
+        case 'l3m':
+          document.getElementById('last_3_months').checked = true;
+          break;
+      }
+      PlotBySubcategories(aggregated_subcats);
+    });
+    document.getElementById('tags').checked = false;
+    document.getElementById('category').checked = false;
+    document.getElementById('subcategory').checked = true;
+  };
+
+  function PlotTimeSeries(balance) {
+
+    //var data = JSON.parse('{{ data | safe}}')
+
+    var data = balance
+
+    var chartData = new Array();
+    var categories = new Array();
+    var chartTicks = 10;
+    var chartXtitle = "yearmonth";
+
+    // Populate series
+    if(data[0]["yearmonth"] != undefined){
+      for (i = 0; i < data.length; i++){
+          chartData.push([String(data[i].yearmonth), data[i].closing_balance]);
+          categories.push(String(data[i].yearmonth));
+      }
+    }
+    else{
+      for (i = 0; i < data.length; i++){
+          chartData.push([String(data[i].year), data[i].closing_balance]);
+          categories.push(String(data[i].year));
+          chartXtitle = "year";
+          chartTicks = 1;
+      }
+    }
+
+    // draw chart
+    $('#container').highcharts({
+
+    chart: {
+        type: "line",
+        zoomType: 'x'
+    },
+    title: {
+        text: "Closing Balance"
+    },
+    xAxis: {
+      type: 'datetime',
+      categories: categories,
+      tickInterval: chartTicks,
+      title: {
+            text: chartXtitle,
+          },
+    },
+    yAxis: {
+      labels: {
+        formatter: function() {
+            return parseInt(this.value) ;
+        }
+        },
+        title: {
+            text: "amount"
+        }
+    },
+
+    tooltip: {
+        pointFormat: '{point.y:.2f}'
+    },
+
+    series: [{
+      type: 'area',
+      name: 'Balance',
+      data: chartData
+      }]
+    });
+  };
+
+  function PlotByTags(agg_tags) {
+
+      //var data = JSON.parse('{{ data_by_tags | safe}}')
+
+      var data = agg_tags;
+
+      var chartData = new Array();
+      var categories = new Array();
+      var chartTicks = 10;
+      var chartXtitle = "yearmonth";
+
+      // Populate series
+      if(data[0]["yearmonth"] != undefined){
+        for (i = 0; i < data.length; i++){
+            categories.push([String(data[i].yearmonth)]);
+            delete data[i].yearmonth;
+            chartXtitle = "yearmonth";
+        }
+      }
+      else{
+        for (i = 0; i < data.length; i++){
+            categories.push([String(data[i].year)]);
+            delete data[i].year;
+            chartXtitle = "year";
+            chartTicks = 1;
+        }
+      }
+
+      var nameArray = Object.keys(data[0]);
+      var chartData = [];
+      var pieChartData = [];
+
+      for (i=0; i < nameArray.length; i++){
+        var kv = {};
+        var kv_for_pie = {};
+
+        kv.name = nameArray[i];
+        kv_for_pie.name = nameArray[i];
+        var v = [];
+        var sum = 0;
+        for (j=0; j < data.length; j++){
+          v.push(data[j][nameArray[i]]);
+
+          if (data[j][nameArray[i]] < 0){
+            sum += Math.abs(data[j][nameArray[i]]);
+          }
+
+        }
+        kv_for_pie.y = sum;
+        kv.data = v;
+        chartData.push(kv);
+        pieChartData.push(kv_for_pie);
+      }
+
+      //console.log(pieChartData);
+
+      $('#container_pie_chart').highcharts({
+
+        chart: {
+            type: 'pie'
+        },
+        title: {
+            text: 'Total Spend by Tags'
+        },
+        plotOptions: {
+            pie: {
+                allowPointSelect: true,
+                cursor: 'pointer',
+                allowPointSelect: true,
+                showInLegend: true,
+                dataLabels: {
+                    enabled: false,
+                    style: {
+                        color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                    }
+                }
+              }
+        },
+
+        tooltip: {
+            pointFormat: '{point.y:.2f}'
+        },
+
+        series : [{
+          colorByPoint: true,
+          data: pieChartData
+        }]
+      });
+
+      $('#container_stacked_bar_chart').highcharts({
+        chart: {
+          type: 'column'
+      },
+      title: {
+          text: 'Spend by Tags'
+      },
+
+      xAxis: {
+         categories: categories,
+         tickInterval: chartTicks,
+         title: {
+               text: chartXtitle,
+             },
+     },
+
+     yAxis: {
+
+          title: {
+              text: 'Total Spend By Tags'
+          },
+          stackLabels: {
+              enabled: true,
+          }
+      },
+
+      tooltip: {
+        formatter: function () {
+            return '<b>' + this.series.name + '</b><br/>' +
+                'Category Total: ' + this.point.y + '<br/>' +
+                'Total:' + this.point.stackTotal
+        },
+        yDecimals: 2
+
+      },
+
+      plotOptions: {
+          column: {
+              stacking: 'normal',
+          }
+      },
+
+      series: chartData,
+
+      exporting: {
+        showTable: false
+      }
+
+      });
+
+  };
+
+  function PlotByCategories(agg_cats) {
+
+      //var data = JSON.parse('{{ data_by_category | safe}}')
+      var data = agg_cats;
+
+      var chartData = new Array();
+      var categories = new Array();
+      var chartTicks = 10;
+      var chartXtitle = "yearmonth";
+
+      // Populate series
+      if(data[0]["yearmonth"] != undefined){
+        for (i = 0; i < data.length; i++){
+            categories.push([String(data[i].yearmonth)]);
+            delete data[i].yearmonth;
+            chartXtitle = "yearmonth";
+        }
+      }
+      else{
+        for (i = 0; i < data.length; i++){
+            categories.push([String(data[i].year)]);
+            delete data[i].year;
+            chartXtitle = "year";
+            chartTicks = 1;
+        }
+      }
+
+      var nameArray = Object.keys(data[0]);
+      var chartData = [];
+      var pieChartData = [];
+
+      for (i=0; i < nameArray.length; i++){
+        var kv = {};
+        var kv_for_pie = {};
+
+        kv.name = nameArray[i];
+        kv_for_pie.name = nameArray[i];
+        var v = [];
+        var sum = 0;
+        for (j=0; j < data.length; j++){
+          v.push(data[j][nameArray[i]]);
+
+          if (data[j][nameArray[i]] < 0){
+            sum += Math.abs(data[j][nameArray[i]]);
+          }
+
+        }
+        kv_for_pie.y = sum;
+        kv.data = v;
+        chartData.push(kv);
+        pieChartData.push(kv_for_pie);
+      }
+
+      // console.log(pieChartData);
+
+      $('#container_pie_chart').highcharts({
+
+        chart: {
+            type: 'pie'
+        },
+        title: {
+            text: 'Total Spend by Categories'
+        },
+        plotOptions: {
+            pie: {
+                allowPointSelect: true,
+                cursor: 'pointer',
+                allowPointSelect: true,
+                showInLegend: true,
+                dataLabels: {
+                    enabled: false,
+                    style: {
+                        color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                    }
+                }
+              }
+        },
+
+        tooltip: {
+            pointFormat: '{point.y:.2f}'
+        },
+
+        series : [{
+          colorByPoint: true,
+          data: pieChartData
+        }]
+      });
+
+      $('#container_stacked_bar_chart').highcharts({
+        chart: {
+          type: 'column'
+      },
+      title: {
+          text: 'Spend by Categories'
+      },
+
+      xAxis: {
+         categories: categories,
+         tickInterval: chartTicks,
+         title: {
+               text: chartXtitle,
+             },
+     },
+
+     yAxis: {
+
+          title: {
+              text: 'Total Spend By Categories'
+          },
+          stackLabels: {
+              enabled: true,
+          }
+      },
+
+      tooltip: {
+        formatter: function () {
+            return '<b>' + this.series.name + '</b><br/>' +
+                'Category Total: ' + this.point.y + '<br/>' +
+                'Total:' + this.point.stackTotal
+        },
+        yDecimals: 2
+
+      },
+
+      plotOptions: {
+          column: {
+              stacking: 'normal',
+          }
+      },
+
+      series: chartData
+
+      });
+
+  };
+
+  function PlotBySubcategories(agg_subcats) {
+
+      //var data = JSON.parse('{{ data_by_subcategory | safe}}')
+      // console.log(data)
+      var data = agg_subcats;
+
+      var chartData = new Array();
+      var categories = new Array();
+      var chartTicks = 10;
+      var chartXtitle = "yearmonth";
+
+      // Populate series
+      if(data[0]["yearmonth"] != undefined){
+        for (i = 0; i < data.length; i++){
+            categories.push([String(data[i].yearmonth)]);
+            delete data[i].yearmonth;
+            chartXtitle = "yearmonth";
+        }
+      }
+      else{
+        for (i = 0; i < data.length; i++){
+            categories.push([String(data[i].year)]);
+            delete data[i].year;
+            chartXtitle = "year";
+            chartTicks = 1;
+        }
+      }
+
+      var nameArray = Object.keys(data[0]);
+      var chartData = [];
+      var pieChartData = [];
+
+      for (i=0; i < nameArray.length; i++){
+        var kv = {};
+        var kv_for_pie = {};
+
+        kv.name = nameArray[i];
+        kv_for_pie.name = nameArray[i];
+        var v = [];
+        var sum = 0;
+        for (j=0; j < data.length; j++){
+          v.push(data[j][nameArray[i]]);
+
+          if (data[j][nameArray[i]] < 0){
+            sum += Math.abs(data[j][nameArray[i]]);
+          }
+
+        }
+        kv_for_pie.y = sum;
+        kv.data = v;
+        chartData.push(kv);
+        pieChartData.push(kv_for_pie);
+      }
+
+      // console.log(pieChartData);
+
+      $('#container_pie_chart').highcharts({
+
+        chart: {
+            type: 'pie'
+        },
+        title: {
+            text: 'Total Spend by Subcategories'
+        },
+        plotOptions: {
+            pie: {
+                allowPointSelect: true,
+                cursor: 'pointer',
+                allowPointSelect: true,
+                showInLegend: true,
+                dataLabels: {
+                    enabled: false,
+                    style: {
+                        color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                    }
+                }
+              }
+        },
+
+        tooltip: {
+            pointFormat: '{point.y:.2f}'
+        },
+
+        series : [{
+          colorByPoint: true,
+          data: pieChartData
+        }]
+      });
+
+      $('#container_stacked_bar_chart').highcharts({
+        chart: {
+          type: 'column'
+      },
+      title: {
+          text: 'Spend by Subcategories'
+      },
+
+      xAxis: {
+         categories: categories,
+         tickInterval: chartTicks,
+         title: {
+               text: chartXtitle,
+             },
+     },
+
+     yAxis: {
+
+          title: {
+              text: 'Total Spend By Subcategories'
+          },
+          stackLabels: {
+              enabled: true,
+          }
+      },
+
+      tooltip: {
+        formatter: function () {
+            return '<b>' + this.series.name + '</b><br/>' +
+                'Category Total: ' + this.point.y + '<br/>' +
+                'Total:' + this.point.stackTotal
+        },
+        yDecimals: 2
+
+      },
+
+      plotOptions: {
+          column: {
+              stacking: 'normal',
+          }
+      },
+
+      series: chartData
+
+      });
+
+  };
+
+  function GetFilteredData(){
+    document.getElementById('tags').checked = true;
+    document.getElementById('category').checked = false;
+    document.getElementById('subcategory').checked = false;
+    $.getJSON("{{ url_for('main.show_chart_data', name=account.name) }}",
+    { frequency : 'm',
+      date_from: $('input[name="date_from"]').val(),
+      date_to  : $('input[name="date_to"]').val(),
+      amount_ge: $('input[name="amount_ge"]').val(),
+      amount_le: $('input[name="amount_le"]').val(),
+      category_like: $('input[name="category_like"]').val(),
+      tags_like: $('input[name="tags_like"]').val(),
+      description_like: $('input[name="description_like"]').val(),
+    },
+    function(data) {
+      var all_data = data;
+      var set_frequency = all_data['frequency'];
+      var balance = all_data['balance'];
+      var aggregated_tags = all_data['by_tags'];
+      PlotTimeSeries(balance);
+      PlotByTags(aggregated_tags);
+      document.getElementById('all_by_year').checked = false;
+      document.getElementById('all_by_months').checked = false;
+      document.getElementById('last_12_months').checked = false;
+      document.getElementById('last_3_months').checked = false;
+      switch(set_frequency) {
+        case 'y':
+          document.getElementById('all_by_year').checked = true;
+          break;
+        case 'm':
+          document.getElementById('all_by_months').checked = true;
+          break;
+        case 'l12m':
+          document.getElementById('last_12_months').checked = true;
+          break;
+        case 'l3m':
+            document.getElementById('last_3_months').checked = true;
+          break;
+      }
+    });
+
+
+  };
+
+  function ClearFilterFields(){
+    document.getElementById("date_from").value = "";
+    document.getElementById("date_to").value = "";
+    document.getElementById("amount_ge").value = "";
+    document.getElementById("amount_le").value = "";
+    document.getElementById("type_like").value = "";
+    document.getElementById("category_like").value = "";
+    document.getElementById("tags_like").value = "";
+    document.getElementById("description_like").value = "";
+  };
+
+</script>
+
+<section class="header">
+<h6 class="docs-header transaction-overview">Filter Your Transactions</h6>
+    <div class="container">
+      <div class="row">
+          <div class="three columns">
+              <input id="date_from" name="date_from" class="dtpick", type="text", placeholder="date from">
+          </div>
+          <div class="three columns">
+              <input id="date_to" name="date_to" class="dtpick", type="text", placeholder=" date till">
+          </div>
+          <div class="three columns">
+            <input id="amount_ge" name="amount_ge" class="u-full-width", type="text", placeholder="amount greater than">
+          </div>
+          <div class="three columns">
+            <input id="amount_le" name="amount_le" class="u-full-width", type="text", placeholder="amount less than">
+          </div>
+      </div>
+      <div class="row">
+          <div class="three columns">
+            <input id="type_like" name="type_like" class="u-full-width", type="text", placeholder="NotImplemented">
+          </div>
+          <div class="three columns">
+            <input id="category_like" name="category_like" class="u-full-width", type="text", placeholder="category">
+          </div>
+          <div class="three columns">
+            <input id="tags_like" name="tags_like" class="u-full-width", type="text", placeholder="tags">
+          </div>
+          <div class="three columns">
+            <input id="description_like" name="description_like" class="u-full-width", type="text", placeholder="description">
+          </div>
+      </div>
+      <div class="row">
+        <div class="twelve columns">
+          <button class="button-primary" onclick="GetFilteredData()">Filter</button>
+          <button class="button-primary" onclick="ClearFilterFields()">Clear</button>
+        </div>
+      </div>
+    </div>
+</section>
+
+{% endblock %}

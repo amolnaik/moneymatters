@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/table.css') }}">
+{% endblock %}
+
+
+{% block body %}
+<section class="header">
+  <h2 class="title">Open New Account</h2>
+  <div class="row">
+    <div class="three columns value-prop"></div>
+    <div class="six columns">
+      {% if form.errors %}
+        <div class="has-error"><strong>Error!</strong></div>
+      {% endif %}
+      <form action="{{ url_for('main.new_account') }}" method=post>
+        {{ form.hidden_tag() }}
+        <dl>
+          <dd>{{ form.name(class_="u-full-width", placeholder="account", maxlength=128) }}
+          <dd>{{ form.number(class_="u-full-width", placeholder="number") }}
+          <dd>{{ form.currency(class_="u-full-width", placeholder="currency", maxlength=128) }}
+          <dd>{{ form.balance(class_="u-full-width", placeholder="balance") }}
+          <dt>{{ form.submit(class="button button-primary", value="Start one now") }}
+        </dl>
+      </form>
+    </div>
+</div>
+</section>
+{% endblock %}

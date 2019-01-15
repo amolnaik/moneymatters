@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+
+{% block logger %}
+<a class="popover-link" href="{{ url_for('main.account', name=account.name) }}">Logger</a>
+{% endblock %}
+
+{% block dashboard %}
+<a class="popover-link" href="{{ url_for('main.show_charts', name=account.name) }}">Dashboard</a>
+{% endblock %}
+
+{% block summary %}
+<a class="popover-link" href="{{ url_for('main.show_log', name=account.name) }}">Summary</a>
+{% endblock %}
+
+{% block body %}
+
+<section class="header">
+  <h2 class="title"> File Upload </h2>
+  <div class="row">
+    <div class="three columns value-prop"></div>
+  </div>
+  <div class="row">
+    <form method=post enctype=multipart/form-data>
+      <input type=file name=file>
+      <input class="button-primary" type="submit" value="Upload">
+    </form>
+  </div>
+  <div class="row">
+    <div class="u-full-width">
+      {{ table|safe }}
+    </div>
+  </div>
+</section>
+
+{% endblock %}

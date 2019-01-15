@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Money</title>
+  <meta name="description" content="Manage Money, Smarter!">
+  <meta name="author" content="Amol Naik">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <link href='https://fonts.googleapis.com/css?family=Raleway:400,300,600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" type='text/css' href="https://cdnjs.cloudflare.com/ajax/libs/normalize/3.0.2/normalize.min.css">
+  <link rel="stylesheet" type='text/css' href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+
+  {% block css %}{% endblock %}
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+  <script type="text/javascript" src="{{ url_for('static', filename='js/site.js') }}"></script>
+  {% block js %}{% endblock %}
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}" />
+</head>
+
+<body>
+  <div class="container">
+    <div class="navbar-spacer"></div>
+    <nav class="navbar">
+      <div class="container">
+        <ul class="navbar-list">
+          <li class="navbar-item"><a class="navbar-link" href="{{ url_for('main.index') }}">MONEYMATTERS</a></li>
+          {% if not current_user.is_authenticated %}
+            <li class="navbar-item">
+              <a class="navbar-link" href="{{ url_for('auth.login') }}">Login</a>
+            </li>
+          {% else %}
+            <li class="navbar-item">
+              <a class="navbar-link" href="#" data-popover="#moreNavPopover">{{ current_user.username }}</a>
+              <div id="moreNavPopover" class="popover">
+                <ul class="popover-list">
+                  <li class="popover-item">
+                      {% block new_account %}{% endblock %}
+                  </li>
+                  <li class="popover-item">
+                    <a class="popover-link" href="{{ url_for('main.account_overview') }}">Your Accounts</a>
+                  </li>
+                  <li class="popover-item">
+                    {% block dashboard %}{% endblock %}
+                  </li>
+                  <li class="popover-item">
+                    {% block logger %}{% endblock %}
+                  </li>
+                  <li class="popover-item">
+                    {% block summary %}{% endblock %}
+                  </li>
+                  <li class="popover-item">
+                    {% block upload %}{% endblock %}
+                  </li>
+                  <li class="popover-item">
+                    {% block scheduled %}{% endblock %}
+                  </li>
+                  <li class="popover-item">
+                    {% block download %}{% endblock %}
+                  </li>
+                  <li class="popover-item">
+                    <a class="popover-link" href="{{ url_for('auth.logout') }}">logout</a>
+                  </li>
+                </ul>
+              </div>
+            </li>
+            {% endif %}
+        </ul>
+      </div>
+    </nav>
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <ul class=flashes>
+      {% for message in messages %}
+        <li>{{ message }}</li>
+      {% endfor %}
+      </ul>
+    {% endif %}
+    {% endwith %}
+    {% block body %}{% endblock %}
+  </div>
+</body>
+</html>
