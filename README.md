@@ -1,7 +1,4 @@
 # Moneymatters
-
-[![License][license-image]][license-url]
-
 Moneymatters is a simple and smart way to manage your money. Written in Python, the repository gives you complete flexibility to build your money management App with local storage. Dashboard and tabular views are built-in.
 
 ---
@@ -45,3 +42,7 @@ Migration           | [Flaks-Migrate](http://flask-migrate.readthedocs.io/en/lat
 Forms               | [Flask-WTF](https://flask-wtf.readthedocs.org/en/latest/)
 Login               | [Flask-Login](https://flask-login.readthedocs.org/en/latest/)
 Testing             | [Flask-Testing](https://pythonhosted.org/Flask-Testing/)
+
+## License
+
+This project is licensed under [The Unlicense](https://unlicense.org/) and released to the Public Domain.
