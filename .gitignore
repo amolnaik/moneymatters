@@ -1,0 +1,13 @@
+
+# ignore following files or folders
+
+flask_session/
+upload/
+tests/
+.ipynb_checkpoints/
+obsolete/
+*.pyc
+*.csv
+*.db
+*.ipynb
+*.yml
