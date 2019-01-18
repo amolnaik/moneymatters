@@ -2,7 +2,6 @@
 # ignore following files or folders
 
 flask_session/
-upload/
 tests/
 .ipynb_checkpoints/
 obsolete/
@@ -11,3 +10,4 @@ obsolete/
 *.db
 *.ipynb
 *.yml
+*.csv

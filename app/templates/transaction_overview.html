@@ -41,13 +41,13 @@
 <section class="header">
   <h2 class="title">Transaction Overview</h2>
   <div id = "transactionform" class="row">
-    {% for field in form.errors %}
-      {% for error in form.errors[field] %}
-          <div class="alert alert-error">
-              <strong>{{field }}</strong> {{error}}.
-          </div>
-      {% endfor %}
-    {% endfor %}
+	    {% for field in form.errors %}
+	      {% for error in form.errors[field] %}
+	          <div class="alert alert-error">
+	              <strong>{{field }}</strong> {{error}}.
+	          </div>
+	      {% endfor %}
+	    {% endfor %}
 
     	<form action="{{ url_for('main.account', name=account.name) }}" method="post">
 					{{ form.hidden_tag() }}
@@ -75,22 +75,30 @@
 					</div>
   			</div>
 			</form>
+
   	</div>
 
 
   <div class="u-full-width">
     <h2 class="docs-header transaction-overview"> Upcoming Transactions</h2>
-    <form action="{{ url_for('main.show_template_transactions', name=account.name) }}" method="post">
+
       <table class="u-full-width">
         <div id="upcoming_ttable"></div>
       </table>
-    </form>
+
   </div>
 
-  <h6 class="docs-header transaction-overview">Last Transactions</h6>
+	<div class="u-full-width">
+    <h2 class="docs-header transaction-overview"> Last Transactions</h2>
+
+      <table class="u-full-width">
+        <div id="ttable"></div>
+      </table>
+
+  </div>
+
 
   <script>
-    console.log(JSON.parse('{{ dataframe | safe}}'))
 
     $("#upcoming_ttable").tabulator({
       height:"100%",
@@ -158,6 +166,7 @@
 				}},
         {title:"Amount", field:"amount", formatter:"money"},
         {title:"Category", field:"category"},
+				{title:"Subcategory", field:"subcategory"},
         {title:"Description", field:"description"},
         {title:"Payee", field:"payee"},
         {title:"Status", field:"status"},
@@ -166,9 +175,10 @@
       ],
   });
 
-  $("#ttable").tabulator("setData", JSON.parse('{{ table | safe}}'));
+		console.log(JSON.parse('{{ table | safe}}'));
+  	$("#ttable").tabulator("setData", JSON.parse('{{ table | safe}}'));
 
-</script>
+	</script>
 
 </section>
 {% endblock %}

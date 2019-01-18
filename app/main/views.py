@@ -87,6 +87,7 @@ def account(name):
             tt_['payee'].append(st.payee)
         current_app.logger.info('Scheduled transactions found')
 
+
     # create  dataframe out of tt_ or send empty
     df_tt = pd.DataFrame.from_dict(tt_)
     if not df_tt.empty:
@@ -148,13 +149,16 @@ def account(name):
             lastday = df.date.max().date()
             df_last = df[df['date'] > (lastday - pd.Timedelta(days=30)).isoformat()]
 
-        df_this_month = df_last.reindex(columns = ['date', 'amount', 'type', 'category',
-                                                          'payee', 'description', 'tag', 'status'])
+
+        df_this_month = df_last.reindex(columns = ['date', 'amount', 'type', 'category', 'subcategory',
+                                                         'payee', 'description', 'tag', 'status'])
     else:
-        df_this_month = pd.DataFrame(columns = ['date', 'amount', 'type', 'category',
+        df_this_month = pd.DataFrame(columns = ['date', 'amount', 'type', 'category', 'subcategory',
                                                           'payee', 'description', 'tag', 'status'])
+
         current_app.logger.info('No transactions for this month')
 
+    
     return render_template('transaction_overview.html',
                             table=df_this_month.to_json(orient='records', date_format='iso'),
                             account=account, form=form, dataframe=df_tt.to_json(orient='records', date_format='iso'))
@@ -298,7 +302,7 @@ def upload_csv(name):
                 current_app.logger.error(e)
 
             return render_template("upload.html",
-                    table=df_from_csv.to_html(classes='tablesorter', border=0, max_rows=10, index=False))
+                    table=df_from_csv.to_html(classes='tablesorter', border=0, max_rows=10, index=False), account=account)
 
     else:
         render_template('upload.html', account=account)
