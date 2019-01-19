@@ -175,8 +175,15 @@
       ],
   });
 
-		console.log(JSON.parse('{{ table | safe}}'));
-  	$("#ttable").tabulator("setData", JSON.parse('{{ table | safe}}'));
+	  var tt = '';
+	 	try{
+				tt = JSON.parse('{{ table | safe}}');
+				$("#ttable").tabulator("setData", JSON.parse('{{ table | safe}}'));
+		}
+		catch(err){
+			console.log(err.message);
+		}
+
 
 	</script>
 

@@ -42,7 +42,7 @@ class ProductionConfig(Config):
     #if os.environ['BASE']:
     #    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(os.environ['BASE'], 'money.db')
     #else:
-    SQLALCHEMY_DATABASE_URI = create_sqlite_uri('money.db')
+    SQLALCHEMY_DATABASE_URI = create_sqlite_uri('/data/money.db')
 
     #print(SQLALCHEMY_DATABASE_URI)
     #SQLALCHEMY_DATABASE_URI = 'mysql://mm_admin:mm_8_9435@localhost/money_db'

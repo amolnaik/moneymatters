@@ -146,19 +146,20 @@ def account(name):
         df_last = df[df['date'] > (today - pd.Timedelta(days=30)).isoformat()]
 
         if df_last.empty:
+            print ("no transactions in the last 30 days")
             lastday = df.date.max().date()
-            df_last = df[df['date'] > (lastday - pd.Timedelta(days=30)).isoformat()]
+            df_last = df[df['date'] > (lastday - pd.Timedelta(days=7)).isoformat()]
+            print df_last.head()
 
-
-        df_this_month = df_last.reindex(columns = ['date', 'amount', 'type', 'category', 'subcategory',
-                                                         'payee', 'description', 'tag', 'status'])
+        df_this_month = df_last #.reindex(columns = ['date', 'amount', 'type', 'category', 'subcategory',
+                                    #                'payee', 'description', 'tag', 'status'])
     else:
         df_this_month = pd.DataFrame(columns = ['date', 'amount', 'type', 'category', 'subcategory',
                                                           'payee', 'description', 'tag', 'status'])
 
         current_app.logger.info('No transactions for this month')
 
-    
+    print df_this_month.head()
     return render_template('transaction_overview.html',
                             table=df_this_month.to_json(orient='records', date_format='iso'),
                             account=account, form=form, dataframe=df_tt.to_json(orient='records', date_format='iso'))
