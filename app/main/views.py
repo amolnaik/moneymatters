@@ -84,6 +84,7 @@ def account(name):
             tt_['category'].append(st.category)
             tt_['status'].append(False)
             tt_['accountid'].append(account.id)
+            tt_['tag'].append(st.tag)
             tt_['payee'].append(st.payee)
         current_app.logger.info('Scheduled transactions found')
 
@@ -129,6 +130,7 @@ def account(name):
                                       accountid=account.id,
                                       payee=form.payee.data)
             new_transaction.save()
+            return redirect(url_for("main.account", name=name)) #check
         except:
             current_app.logger.info('Transaction form could not be completed')
     else:
@@ -146,10 +148,10 @@ def account(name):
         df_last = df[df['date'] > (today - pd.Timedelta(days=30)).isoformat()]
 
         if df_last.empty:
-            print ("no transactions in the last 30 days")
+            #print ("no transactions in the last 30 days")
             lastday = df.date.max().date()
             df_last = df[df['date'] > (lastday - pd.Timedelta(days=7)).isoformat()]
-            print df_last.head()
+            #print df_last.head()
 
         df_this_month = df_last #.reindex(columns = ['date', 'amount', 'type', 'category', 'subcategory',
                                     #                'payee', 'description', 'tag', 'status'])
@@ -159,7 +161,7 @@ def account(name):
 
         current_app.logger.info('No transactions for this month')
 
-    print df_this_month.head()
+    #print df_this_month.head()
     return render_template('transaction_overview.html',
                             table=df_this_month.to_json(orient='records', date_format='iso'),
                             account=account, form=form, dataframe=df_tt.to_json(orient='records', date_format='iso'))
@@ -335,6 +337,7 @@ def data(name):
     df = pd.DataFrame.from_dict(transactions)
     df['date'] = pd.to_datetime(df['date'])
     df = df.sort_values(by='date', ascending=False)
+    df['date'] = df['date'].dt.strftime('%d/%m/%Y')
 
     df['closing_balance'] = df.amount.cumsum() + account.balance
     return df.to_json(orient='records', date_format='iso')
@@ -363,7 +366,9 @@ def set_data(name):
         data = json.loads(request.data)
         t = account.transactions.filter_by(id=data.get('tid')).first()
         # ToDo: Check if the whole record needs to be updated
-        t.date = datetime.strptime(data.get('date'), "%Y-%m-%dT%H:%M:%S.%fZ").date()
+        #t.date = datetime.strptime(data.get('date'), "%Y-%m-%dT%H:%M:%S.%fZ").date()
+        t.date = datetime.strptime(data.get('date'), "%d/%m/%Y").date()
+        #print(datetime.strptime(data.get('date'), "%d/%m/%Y").date())
         t.amount = data.get('amount')
         t.category = data.get('category')
         t.subcategory = data.get('subcategory')
@@ -373,6 +378,8 @@ def set_data(name):
         t.type = data.get('type')
         t.tag = data.get('tag')
         db.session.commit()
+        redirect(url_for('main.set_data', name=name))
+
 
     return render_template('transaction_table.html', account=account)
 
@@ -667,7 +674,8 @@ def new_scheduled_transaction(name):
             #st.tag = data.get('tag')
             db.session.commit()
         except:
-            print request
+            #print request
+            current_app.logger.error('Received Post request with errors')
 
 
     df = pd.DataFrame.from_dict(s_transactions)

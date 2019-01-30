@@ -69,6 +69,12 @@
 				<button class="button" id="del-row">Delete Row</button>
 			</div>
 	</div>
+	<div class="row">
+			<div class="six columns" align="right">
+				<button class="button" id="history-undo">Undo Edit</button>
+				<button class="button" id="history-redo">Redo Edit</button>
+			</div>
+	</div>
 
 	<h6 class="docs-header transaction-overview">All Your Transactions</h6>
 
@@ -98,6 +104,41 @@
 
 
 <script>
+
+	var dateEditor = function(cell, onRendered, success, cancel){
+	    //cell - the cell component for the editable cell
+	    //onRendered - function to call when the editor has been rendered
+	    //success - function to call to pass the successfuly updated value to Tabulator
+	    //cancel - function to call to abort the edit and return to a normal cell
+
+	    //create and style editor
+	    var editor = $("<input type='date'></input>");
+	    editor.css({
+	        "padding":"3px",
+	        "width":"100%",
+	        "box-sizing":"border-box",
+	    });
+
+	    //Set value of editor to the current value of the cell
+	    editor.val(moment(cell.getValue(), "DD/MM/YYYY").format("YYYY-MM-DD"));
+
+
+	    //set focus on the select box when the editor is selected (timeout allows for editor to be added to DOM)
+	    onRendered(function(){
+	      editor.focus();
+	      editor.css("height","100%");
+	    });
+
+	    //when the value has been set, trigger the cell to update
+	    editor.on("change blur", function(e){
+	       success(moment(editor.val(), "YYYY-MM-DD").format("DD/MM/YYYY"));
+				 //console.log(moment(editor.val()).format("DD/MM/YYYY"))
+	    });
+
+	    //return the editor element
+	    return editor;
+	};
+
 
 function removeActiveFilter(filters, field, type){
 	if(filters.some(e => e.field == field)){
@@ -217,6 +258,7 @@ $("#example-table3").tabulator({
 
 		height:"100%",
 		//layout:"fitColumns",
+		history:true,
 		index: "tid",
 		tooltips:false,
     placeholder:"No Data Set",
@@ -225,9 +267,7 @@ $("#example-table3").tabulator({
 		selectable:true,
     columns:[
 				// put id field here to pass back to server
-			  {title:"Date", field:"date", sorter:"date", formatter:function(cell, formatterParams){
-						return moment(cell.getValue()).format("DD/MM/YYYY"); //return the contents of the cell;
-				}},
+			  {title:"Date", field:"date", sorter:"date", editor:dateEditor},
         {title:"Amount", field:"amount", editor:'number', formatter:"money", bottomCalc:"sum", bottomCalcParams:{precision:2}},
         {title:"Category", field:"category", editor:'input'},
 				{title:"Subcategory", field:"subcategory", editor:'input'},
@@ -235,7 +275,9 @@ $("#example-table3").tabulator({
         {title:"Payee", field:"payee", editor:'input'},
         {title:"Status", field:"status", editor:'input'},
         {title:"Tag", field:"tag", editor:"input"},
-        {title:"Type", field:"type", editor:'number'}, // ToDo: pre-selected strings
+        {title:"Type", field:"type", editor:'select', editorParams:{"Unknown":"Unknown", "Credit card":"Credit Card",
+			"Check": "Check", "Cash": "Cash", "Transfer": "Transfer", "Internal Transfer": "Internal",
+		"Debit card": "Debit card", "Standing order": "Order", "Electronic payment": "Electronic", "Deposit": "Deposit"}}, // ToDo: pre-selected strings
     ],
 
 		rowSelected:function(row){
@@ -284,6 +326,8 @@ $("#example-table3").tabulator({
 	                console.log(error);
 	            }
 	        });
+
+					$("#example-table3").tabulator("setSort", "date", "desc");
     },
 
 });
@@ -293,6 +337,17 @@ $("#example-table3").tabulator("setData", "{{ url_for('main.data', name=account.
 $("#download-csv").click(function(){
     $("#example-table3").tabulator("download", "csv", "data.csv");
 });
+
+//undo button
+$("#history-undo").on("click", function(){
+   $("#example-table3").tabulator("undo");
+});
+
+//redo button
+$("#history-redo").on("click", function(){
+   $("#example-table3").tabulator("redo");
+});
+
 
 </script>
 </section>

@@ -11,3 +11,4 @@ obsolete/
 *.ipynb
 *.yml
 *.csv
+application.py
