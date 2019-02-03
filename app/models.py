@@ -242,14 +242,14 @@ class Account(db.Model, BaseModel):
     def open_transactions_count(self):
         return self.transactions.filter_by(status=False).count()
 
-    @property
-    def closing_balance(self):
+
+    def closing_balance(self, id):
         if self.transactions.order_by(None).count() == 0:
             return self._balance
         else:
             #return db.session.query(func.sum(Transaction.amount)).scalar()
             cb = db.session.query(func.sum(Transaction.amount)) \
-                    .filter(Transaction.status == True).scalar()
+                    .filter(Transaction.status == True, Transaction.account_id == id).scalar()
 
             if cb == None:
                 return self._balance

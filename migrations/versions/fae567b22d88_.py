@@ -187,7 +187,7 @@ def upgrade():
     sa.Column('payee', sa.String(length=128), nullable=True),
     sa.ForeignKeyConstraint(['account_id'], ['account.id'], ),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('date', 'amount', 'type', 'description', 'category', 'subcategory', name='unique_transactions')
+    sa.UniqueConstraint('account_id', 'date', 'amount', 'type', 'description', 'category', 'subcategory', name='unique_transactions')
     )
     op.create_index(op.f('ix_transaction_date'), 'transaction', ['date'], unique=False)
     # ### end Alembic commands ###

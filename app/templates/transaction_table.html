@@ -12,7 +12,7 @@
 <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.21.0/moment.min.js" type="text/javascript"></script>
 <script>
   $(function() {
-    $( ".dtpick" ).datepicker({ dateFormat: 'dd/mm/yy'}).datepicker("setDate", "0"); });
+  $( ".dtpick" ).datepicker({ dateFormat: 'dd-mm-yy'}).datepicker("setDate", "0"); });
 </script>
 {% endblock %}
 
@@ -40,8 +40,8 @@
 
 		<div class="row">
 			<div class="six columns"align="right">
-				<input class='dtpick' id="filter-from-value" type="text" placeholder="date from">
-				<input class='dtpick' id="filter-to-value" type="text" placeholder="date to">
+				<input class="dtpick" id="filter-from-value" type="text" placeholder="date from">
+				<input class="dtpick" id="filter-to-value" type="text" placeholder="date to">
 			</div>
 			<div class="six columns"align="left">
 				<input id="filter-amount-ge-value" type="text" placeholder="greater than equal to">
@@ -120,8 +120,7 @@
 	    });
 
 	    //Set value of editor to the current value of the cell
-	    editor.val(moment(cell.getValue(), "DD/MM/YYYY").format("YYYY-MM-DD"));
-
+	    editor.val(moment.utc(cell.getValue()));
 
 	    //set focus on the select box when the editor is selected (timeout allows for editor to be added to DOM)
 	    onRendered(function(){
@@ -131,8 +130,8 @@
 
 	    //when the value has been set, trigger the cell to update
 	    editor.on("change blur", function(e){
-	       success(moment(editor.val(), "YYYY-MM-DD").format("DD/MM/YYYY"));
-				 //console.log(moment(editor.val()).format("DD/MM/YYYY"))
+	       success(moment.utc(editor.val()).toISOString());
+				 console.log(moment.utc(editor.val()).toISOString())
 	    });
 
 	    //return the editor element
@@ -165,15 +164,15 @@ function updateFilter(){
 
 		if($("#filter-from-value").val()) {
 			//console.log(moment($("#filter-from-value").val(), 'DD/MM/YYYY', true).format())
-			var d = moment($("#filter-from-value").val(), 'DD/MM/YYYY', true).toISOString();
 			removeActiveFilter($("#example-table3").tabulator("getFilters"), "date", ">")
+			var d = moment.utc($("#filter-from-value").val(), 'DD/MM/YYYY').toISOString();
 			console.log(d)
 			$("#example-table3").tabulator("addFilter", "date", ">", d);
 		}
 
 		if($("#filter-to-value").val()) {
 			removeActiveFilter($("#example-table3").tabulator("getFilters"), "date", "<")
-			var e = moment($("#filter-to-value").val(), 'DD/MM/YYYY', true).toISOString();
+			var e = moment($("#filter-to-value").val(), 'DD/MM/YYYY').toISOString();
 			console.log(e)
 			$("#example-table3").tabulator("addFilter", "date", "<", e);
 		}
@@ -208,7 +207,7 @@ function updateFilter(){
 			$("#example-table3").tabulator("addFilter", "status", "=", ($("#filter-status-value").val() == "true"));
 		}
 
-		console.log($("#example-table3").tabulator("getFilters"))
+		//console.log($("#example-table3").tabulator("getFilters"))
 		//var data = $("#example-table").tabulator("getData");
 		//console.log(data)
 }
@@ -267,7 +266,11 @@ $("#example-table3").tabulator({
 		selectable:true,
     columns:[
 				// put id field here to pass back to server
-			  {title:"Date", field:"date", sorter:"date", editor:dateEditor},
+			  { title:"Date", field:"date", sorter:"date", editor:dateEditor, formatter:function(cell, formatterParams){
+	        //cell - the cell component
+	        //formatterParams - parameters set for the column
+					return moment.utc(cell.getValue()).format("DD/MM/YYYY"); //return the contents of the cell;
+    		},},
         {title:"Amount", field:"amount", editor:'number', formatter:"money", bottomCalc:"sum", bottomCalcParams:{precision:2}},
         {title:"Category", field:"category", editor:'input'},
 				{title:"Subcategory", field:"subcategory", editor:'input'},
@@ -335,7 +338,7 @@ $("#example-table3").tabulator({
 $("#example-table3").tabulator("setData", "{{ url_for('main.data', name=account.name) }}");
 
 $("#download-csv").click(function(){
-    $("#example-table3").tabulator("download", "csv", "data.csv");
+    $("#example-table3").tabulator("download", "json", "data.json");
 });
 
 //undo button

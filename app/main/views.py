@@ -22,7 +22,7 @@ from sqlalchemy import exc
 
 reload(sys)
 sys.setdefaultencoding('utf8')
-ALLOWED_EXTENSIONS = set(['csv'])
+ALLOWED_EXTENSIONS = set(['csv', 'json'])
 
 @main.route('/')
 def index():
@@ -240,6 +240,7 @@ def upload_csv(name):
 
             try:
                 filename = secure_filename(file.filename)
+                file_extension = filename.split('.')[1]
                 try:
                     os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
                 except OSError:
@@ -249,63 +250,104 @@ def upload_csv(name):
                 current_app.logger.error('Failed to save file here: '
                  + os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
 
-            # dataframe formatting
-            df = pd.read_csv(os.path.join(current_app.config['UPLOAD_FOLDER'], filename), sep=';')
-            df['date'] = pd.to_datetime(df['date'],format='%d/%m/%Y')
-            df = df.drop(['info'], axis=1)
-            df = df.rename({'paymode': 'type', 'wording': 'description', 'tags':'tag'}, axis='columns')
-            df['account_id'] = account.id
-            df['status'] = True
-            df['payee'] = df['payee'].str.decode('utf-8').replace(np.nan, "not provided")
-            df['description'] = df['description'].str.decode('utf-8').replace(np.nan, "not provided")
-            df['category'] = df['category'].str.decode('utf-8').replace(np.nan, "not provided")
-            df['tag'] = df['tag'].str.decode('utf-8').replace(np.nan, "not provided")
 
-            #df.replace({'type': {0:1}}, inplace=True)
-            df['category'] = df['category'].apply(lambda x: x+':' if ':' not in x else x)
-            df['category'], df['subcategory'] = zip(*df['category'].str.split(':').tolist())
-            df['subcategory'] = df['subcategory'].replace('', "not provided")
+            if file_extension == 'json':
+                df = pd.read_json(os.path.join(current_app.config['UPLOAD_FOLDER'], filename), orient='records')
+                df['date'] = pd.to_datetime(df['date']).dt.strftime("%d/%m/%Y")
+                df['date'] = pd.to_datetime(df['date'])
 
-            # Test: Convert to new category and subcategory typeids
-            r = reformat.Reformat()
-            df_changed = r.category_and_subcategory(df)
+                df['account_id'] = account.id
+                df.drop(['tid', 'closing_balance'], axis=1, inplace=True)
+                #
+                grouped = df.groupby(['date', 'amount', 'type', 'description', 'category', 'subcategory'])
+                index = [gp_keys[0] for gp_keys in grouped.groups.values()]
+                df_ = df.reindex(index)
 
+                # combine records
+                if len(transactions) > 0:
+                    current_app.logger.info("DB Dataframe: " + str(df_from_db.shape))
+                    current_app.logger.info("Json Dataframe: " + str(df_.shape))
 
-            # map paymodes to types
-            transactiontypes = dict(((ttp.id, ttp.ttype) for ttp in db.session.query(TransactionType).all()))
-            df_changed['type'] = df_changed['type'].map(transactiontypes)
+                    df_from_json = df_[~df_.isin(df_from_db.to_dict('l')).all(1)]
 
-            grouped = df_changed.groupby(['date', 'amount', 'type', 'description', 'category', 'subcategory'])
-            index = [gp_keys[0] for gp_keys in grouped.groups.values()]
-            df_ = df_changed.reindex(index)
+                    current_app.logger.info("New Rows from json: " + str(df_from_json.shape))
+                    current_app.logger.info("Concatenated Dataframe: " + str(df_from_json.shape))
+                else:
+                    df_from_json = df_
 
-            # combine records
-            if len(transactions) > 0:
-                current_app.logger.info("DB Dataframe: " + str(df_from_db.shape))
-                current_app.logger.info("CSV Dataframe: " + str(df_.shape))
+                current_app.logger.info('Converting dataframe to sql records and inserting')
+                print df_from_json.head()
+                try:
+                    #engine = create_engine('mysql+mysqldb://mm_admin:mm_8_9435@localhost/money_db')
+                    #engine=create_engine('mysql+mysqldb://'+os.environ['RDS_USERNAME']+":"+os.environ['RDS_PASSWORD']+ \
+                    #                        '@'+os.environ['RDS_HOSTNAME']+'/'+os.environ['RDS_DB_NAME'])
+                    #current_app.logger.info(df_from_csv['type_id'].unique())
 
-                df_from_csv = df_[~df_.isin(df_from_db.to_dict('l')).all(1)]
+                    df_from_json.to_sql(name='transaction', con=db.engine, index=False, if_exists='append')
 
-                current_app.logger.info("New Rows from CSV: " + str(df_from_csv.shape))
-                current_app.logger.info("Concatenated Dataframe: " + str(df_from_csv.shape))
+                except exc.SQLAlchemyError as e:
+                    current_app.logger.error(e)
+
+                return render_template("upload.html",
+                        table=df_from_json.to_html(classes='tablesorter', border=0, max_rows=10, index=False), account=account)
+
             else:
-                df_from_csv = df_
+                # dataframe formatting
+                df = pd.read_csv(os.path.join(current_app.config['UPLOAD_FOLDER'], filename), sep=';')
+                df['date'] = pd.to_datetime(df['date'],format='%d/%m/%Y')
+                df = df.drop(['info'], axis=1)
+                df = df.rename({'paymode': 'type', 'wording': 'description', 'tags':'tag'}, axis='columns')
+                df['account_id'] = account.id
+                df['status'] = True
+                df['payee'] = df['payee'].str.decode('utf-8').replace(np.nan, "not provided")
+                df['description'] = df['description'].str.decode('utf-8').replace(np.nan, "not provided")
+                df['category'] = df['category'].str.decode('utf-8').replace(np.nan, "not provided")
+                df['tag'] = df['tag'].str.decode('utf-8').replace(np.nan, "not provided")
 
-            current_app.logger.info('Converting dataframe to sql records and inserting')
-            #current_app.logger.info("engine: " + 'mysql+mysqldb://'+os.environ['RDS_USERNAME']+":"+os.environ['RDS_PASSWORD']+ \
-            #                        '@'+os.environ['RDS_HOSTNAME']+'/'+os.environ['RDS_DB_NAME'])
-            try:
-                #engine = create_engine('mysql+mysqldb://mm_admin:mm_8_9435@localhost/money_db')
-                #engine=create_engine('mysql+mysqldb://'+os.environ['RDS_USERNAME']+":"+os.environ['RDS_PASSWORD']+ \
+                #df.replace({'type': {0:1}}, inplace=True)
+                df['category'] = df['category'].apply(lambda x: x+':' if ':' not in x else x)
+                df['category'], df['subcategory'] = zip(*df['category'].str.split(':').tolist())
+                df['subcategory'] = df['subcategory'].replace('', "not provided")
+
+                # Test: Convert to new category and subcategory typeids
+                r = reformat.Reformat()
+                df_changed = r.category_and_subcategory(df)
+
+                # map paymodes to types
+                transactiontypes = dict(((ttp.id, ttp.ttype) for ttp in db.session.query(TransactionType).all()))
+                df_changed['type'] = df_changed['type'].map(transactiontypes)
+
+                grouped = df_changed.groupby(['date', 'amount', 'type', 'description', 'category', 'subcategory'])
+                index = [gp_keys[0] for gp_keys in grouped.groups.values()]
+                df_ = df_changed.reindex(index)
+
+                # combine records
+                if len(transactions) > 0:
+                    current_app.logger.info("DB Dataframe: " + str(df_from_db.shape))
+                    current_app.logger.info("CSV Dataframe: " + str(df_.shape))
+
+                    df_from_csv = df_[~df_.isin(df_from_db.to_dict('l')).all(1)]
+
+                    current_app.logger.info("New Rows from CSV: " + str(df_from_csv.shape))
+                    current_app.logger.info("Concatenated Dataframe: " + str(df_from_csv.shape))
+                else:
+                    df_from_csv = df_
+
+                current_app.logger.info('Converting dataframe to sql records and inserting')
+                #current_app.logger.info("engine: " + 'mysql+mysqldb://'+os.environ['RDS_USERNAME']+":"+os.environ['RDS_PASSWORD']+ \
                 #                        '@'+os.environ['RDS_HOSTNAME']+'/'+os.environ['RDS_DB_NAME'])
-                #current_app.logger.info(df_from_csv['type_id'].unique())
-                df_from_csv.to_sql(name='transaction', con=db.engine, index=False, if_exists='append')
-                #df_from_csv.to_csv(os.path.join(current_app.config['UPLOAD_FOLDER'],'test_with_subcategory.csv'),sep=';')
-            except exc.SQLAlchemyError as e:
-                current_app.logger.error(e)
+                try:
+                    #engine = create_engine('mysql+mysqldb://mm_admin:mm_8_9435@localhost/money_db')
+                    #engine=create_engine('mysql+mysqldb://'+os.environ['RDS_USERNAME']+":"+os.environ['RDS_PASSWORD']+ \
+                    #                        '@'+os.environ['RDS_HOSTNAME']+'/'+os.environ['RDS_DB_NAME'])
+                    #current_app.logger.info(df_from_csv['type_id'].unique())
+                    df_from_csv.to_sql(name='transaction', con=db.engine, index=False, if_exists='append')
+                    #df_from_csv.to_csv(os.path.join(current_app.config['UPLOAD_FOLDER'],'test_with_subcategory.csv'),sep=';')
+                except exc.SQLAlchemyError as e:
+                    current_app.logger.error(e)
 
-            return render_template("upload.html",
-                    table=df_from_csv.to_html(classes='tablesorter', border=0, max_rows=10, index=False), account=account)
+                return render_template("upload.html",
+                        table=df_from_csv.to_html(classes='tablesorter', border=0, max_rows=10, index=False), account=account)
 
     else:
         render_template('upload.html', account=account)
@@ -337,7 +379,6 @@ def data(name):
     df = pd.DataFrame.from_dict(transactions)
     df['date'] = pd.to_datetime(df['date'])
     df = df.sort_values(by='date', ascending=False)
-    df['date'] = df['date'].dt.strftime('%d/%m/%Y')
 
     df['closing_balance'] = df.amount.cumsum() + account.balance
     return df.to_json(orient='records', date_format='iso')
@@ -366,9 +407,9 @@ def set_data(name):
         data = json.loads(request.data)
         t = account.transactions.filter_by(id=data.get('tid')).first()
         # ToDo: Check if the whole record needs to be updated
-        #t.date = datetime.strptime(data.get('date'), "%Y-%m-%dT%H:%M:%S.%fZ").date()
-        t.date = datetime.strptime(data.get('date'), "%d/%m/%Y").date()
-        #print(datetime.strptime(data.get('date'), "%d/%m/%Y").date())
+        t.date = datetime.strptime(data.get('date'), "%Y-%m-%dT%H:%M:%S.%fZ").date()
+        #t.date = datetime.strptime(data.get('date'), "%d/%m/%Y").date()
+        #print(data.get('date'))
         t.amount = data.get('amount')
         t.category = data.get('category')
         t.subcategory = data.get('subcategory')

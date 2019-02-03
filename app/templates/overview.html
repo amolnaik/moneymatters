@@ -46,7 +46,7 @@ $(document).ready(function() {
                 <td><a href="{{ url_for('main.account', name=account.name) }}">{{ account.name }}</a></td>
                 <td><a href="{{ url_for('main.show_log', name=account.name) }}">{{ account.total_transactions_count }}</a></td>
                 <td> {{ account.completed_transactions_count }} </td>
-                <td> {{ account.closing_balance }} </td>
+                <td> {{ account.closing_balance(account.id) }} </td>
               </tr>
             {% endfor %}
           </tbody>
