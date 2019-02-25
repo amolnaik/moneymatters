@@ -35,8 +35,20 @@ def index():
 @main.route('/accounts/', methods=['GET'])
 @login_required
 def account_overview():
+    # current user's accounts as json
+    account_data = []
+    for account in current_user.accounts:
+        account_data.append({'account_id' : account.id,
+                             'account_name': account.name,
+                             'opening_balance': account.balance,
+                             'total_transactions': account.total_transactions_count,
+                             'pending_transactions':
+                              (account.total_transactions_count - account.completed_transactions_count),
+                             'closing_balance': account.closing_balance(account.id),
+                             'account_currency':account.currency,
+                             'account_view': str("view")})
 
-    return render_template('overview.html')
+    return render_template('overview.html', account_data=json.dumps(account_data))
 
 @main.route('/accounts/new/', methods=['GET','POST'])
 @login_required
@@ -56,6 +68,31 @@ def new_account():
             return redirect(url_for('main.account_overview'))
 
     return render_template('new_account.html', form=form)
+
+
+@main.route('/accounts/edit/<int:id>/', methods=['GET','POST'])
+@login_required
+def edit_account(id):
+
+    account = Account.query.filter_by(id=id).first_or_404()
+
+    if request.method == "POST":
+        current_app.logger.info('Received request to edit data')
+        data = json.loads(request.data)
+
+        if account.name != data.get('account_name'):
+            account.name = data.get('account_name')
+            db.session.commit()
+
+        if account.currency != data.get('account_currency'):
+            account.currency = data.get('account_currency')
+            db.session.commit()
+
+        if account.balance != data.get('opening_balance'):
+            account.balance = data.get('opening_balance')
+            db.session.commit()
+
+    return redirect(url_for("main.account_overview"))
 
 @main.route('/accounts/<string:name>/', methods=['GET', 'POST'])
 @login_required
@@ -106,6 +143,7 @@ def account(name):
     subcatchoices = [(subcat.id, subcat.subcattype) for subcat
     in SubCategoryType.query.order_by(SubCategoryType.subcattype).all()]
 
+
     form = TransactionForm()
     form.type.choices = ttypechoices
     form.category.choices = catchoices
@@ -136,6 +174,8 @@ def account(name):
     else:
         current_app.logger.info('Transaction form could not be validated')
 
+
+
     # show transaction for this month
     transactions = [transaction.to_dict() for transaction in account.transactions]
 
@@ -148,10 +188,9 @@ def account(name):
         df_last = df[df['date'] > (today - pd.Timedelta(days=30)).isoformat()]
 
         if df_last.empty:
-            #print ("no transactions in the last 30 days")
+
             lastday = df.date.max().date()
             df_last = df[df['date'] > (lastday - pd.Timedelta(days=7)).isoformat()]
-            #print df_last.head()
 
         df_this_month = df_last #.reindex(columns = ['date', 'amount', 'type', 'category', 'subcategory',
                                     #                'payee', 'description', 'tag', 'status'])
@@ -161,7 +200,6 @@ def account(name):
 
         current_app.logger.info('No transactions for this month')
 
-    #print df_this_month.head()
     return render_template('transaction_overview.html',
                             table=df_this_month.to_json(orient='records', date_format='iso'),
                             account=account, form=form, dataframe=df_tt.to_json(orient='records', date_format='iso'))
@@ -430,7 +468,8 @@ def show_chart_data(name):
 
     account = Account.query.filter_by(name=name).first_or_404()
     # get all transactions from the account
-    transactions = [transaction.to_dict() for transaction in account.transactions]
+    #transactions = [transaction.to_dict() for transaction in account.transactions]
+    transactions = [transaction.to_dict() for transaction in account.transactions.filter_by(status=True)]
 
     # format trasaction dataframe nicely
     df = pd.DataFrame.from_dict(transactions)
@@ -545,7 +584,8 @@ def show_charts(name):
 
     account = Account.query.filter_by(name=name).first_or_404()
     # get all transactions from the account
-    transactions = [transaction.to_dict() for transaction in account.transactions]
+    #transactions = [transaction.to_dict() for transaction in account.transactions]
+    transactions = [transaction.to_dict() for transaction in account.transactions.filter_by(status=True)]
 
     # format trasaction dataframe nicely
     df = pd.DataFrame.from_dict(transactions)
@@ -649,8 +689,6 @@ def filterdata(df, request):
     if request.args.get('description_like', '', type=str) != '':
         df_filtered = df_filtered[df_filtered['description'].str \
                     .contains(request.args.get('description_like', '', type=str))]
-
-
 
 
     return df_filtered

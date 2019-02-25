@@ -18,6 +18,7 @@
   <script type="text/javascript" src="{{ url_for('static', filename='js/site.js') }}"></script>
   {% block js %}{% endblock %}
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}" />
+
 </head>
 
 <body>
@@ -38,6 +39,9 @@
                 <ul class="popover-list">
                   <li class="popover-item">
                       {% block new_account %}{% endblock %}
+                  </li>
+                  <li class="popover-item">
+                      {% block edit_account %}{% endblock %}
                   </li>
                   <li class="popover-item">
                     <a class="popover-link" href="{{ url_for('main.account_overview') }}">Your Accounts</a>

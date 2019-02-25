@@ -2,6 +2,13 @@
 
 {% block js %}
 <script src="{{ url_for('static', filename='js/jquery.tablesorter.min.js') }}"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+			  integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
+			  crossorigin="anonymous"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tabulator_modern.css') }}">
+<!--link href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/3.5.1/css/tabulator_modern.min.css" rel="stylesheet"-->
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/3.5.1/js/tabulator.min.js"></script>
 <script type="text/javascript" id="js">
 $(document).ready(function() {
   var timeExtraction = function(node) {
@@ -11,11 +18,13 @@ $(document).ready(function() {
       return node.innerHTML;
     }
   }
-  $("#account-overview-table").tablesorter({
-    textExtraction: timeExtraction
-  });
+
 });
 </script>
+<script type=text/javascript>
+	var $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+</script>
+
 {% endblock %}
 
 {% block css %}
@@ -26,33 +35,65 @@ $(document).ready(function() {
   <a class="popover-link" href="{{ url_for('main.new_account') }}">Create Account</a>
 {% endblock %}
 
+{% block edit_account %}
+  <a class="popover-link" >Edit Account</a>
+{% endblock %}
+
 {% block body %}
 <section class="header">
   <h2 class="title">Account overview</h2>
-  <div class="row">
-    <div class="u-full-width">
-      <!-- <h6 class="docs-header account-overview">All your Accounts</h6> -->
-      <table id="account-overview-table" class="tablesorter">
-        <thead>
-          <tr>
-            <th style="width:25%">Account Name</th>
-            <th style="width:25%"> Transactions </th>
-            <th style="width:25%"> Completed</th>
-            <th style="width:25%"> Closing Balance </th>
-          </tr>
-          <tbody>
-            {% for account in current_user.accounts %}
-              <tr>
-                <td><a href="{{ url_for('main.account', name=account.name) }}">{{ account.name }}</a></td>
-                <td><a href="{{ url_for('main.show_log', name=account.name) }}">{{ account.total_transactions_count }}</a></td>
-                <td> {{ account.completed_transactions_count }} </td>
-                <td> {{ account.closing_balance(account.id) }} </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </thead>
-      </table>
-    </div>
+
+  <div class="u-full-width">
+    <table class="u-full-width">
+      <div id="account-table"></div>
+    </table>
   </div>
+
+  <script>
+
+
+    $("#account-table").tabulator({
+      height:"100%",
+      layout:"fitColumns",
+      tooltips:false,
+      placeholder:"No Data Set",
+      columns:[
+				  {title:"Id", field:"account_id"},
+          {title:"Account", field:"account_name", editor:"input"},
+					{title:"Opening Balance", field: "opening_balance", formatter:"money", editor: "number"},
+          {title:"Transactions", field:"total_transactions", cellClick:function(e,cell){
+						var rowData = cell.getRow().getData()['account_name'] }},
+          {title:"Pending", field:"pending_transactions"},
+          {title:"Closing Balance", field:"closing_balance", formatter:"money", bottomCalc:"sum", bottomCalcParams:{precision:2}},
+					{title: "Currency", field: "account_currency", editor: "input"},
+					{title: "Link", field: "account_view", formatter:"link", formatterParams:{urlField:"account_name"}}
+      ],
+
+			cellEdited:function(cell){
+					//This callback is called any time a cell is edidted
+					//var test = { "name":"John", "age":30, "city":"New York"};
+					console.log($SCRIPT_ROOT + '/accounts/edit/' + cell.getData()['account_id'] + '/')
+					$.ajax({
+	 	            url: $SCRIPT_ROOT + '/accounts/edit/' + cell.getData()['account_id'] + '/',
+	 		          data: JSON.stringify(cell.getData()),
+	 	            type: 'POST',
+	 							contentType: 'application/json;charset=UTF-8',
+	 	            success: function(response) {
+	 	                console.log('success');
+	 	            },
+	 	            error: function(error) {
+	 	                console.log(error);
+	 	            }
+	 	        });
+
+			},
+
+		});
+
+  $("#account-table").tabulator("setData", JSON.parse('{{ account_data | safe}}'));
+
+  </script>
+
+
 </section>
 {% endblock %}

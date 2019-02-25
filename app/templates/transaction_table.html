@@ -7,12 +7,14 @@
 			  integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
 			  crossorigin="anonymous"></script>
 <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
-<link href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/3.5.1/css/tabulator_simple.min.css" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tabulator_modern.css') }}">
+<!--link href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/3.5.1/css/tabulator_simple.min.css" rel="stylesheet"-->
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/3.5.1/js/tabulator.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.21.0/moment.min.js" type="text/javascript"></script>
 <script>
   $(function() {
   $( ".dtpick" ).datepicker({ dateFormat: 'dd-mm-yy'}).datepicker("setDate", "0"); });
+
 </script>
 {% endblock %}
 
@@ -167,14 +169,14 @@ function updateFilter(){
 			removeActiveFilter($("#example-table3").tabulator("getFilters"), "date", ">")
 			var d = moment.utc($("#filter-from-value").val(), 'DD/MM/YYYY').toISOString();
 			console.log(d)
-			$("#example-table3").tabulator("addFilter", "date", ">", d);
+			$("#example-table3").tabulator("addFilter", "date", ">=", d);
 		}
 
 		if($("#filter-to-value").val()) {
 			removeActiveFilter($("#example-table3").tabulator("getFilters"), "date", "<")
-			var e = moment($("#filter-to-value").val(), 'DD/MM/YYYY').toISOString();
+			var e = moment.utc($("#filter-to-value").val(), 'DD/MM/YYYY').toISOString();
 			console.log(e)
-			$("#example-table3").tabulator("addFilter", "date", "<", e);
+			$("#example-table3").tabulator("addFilter", "date", "<=", e);
 		}
 
 		if($("#filter-type-value").val()) {

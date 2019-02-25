@@ -15,7 +15,8 @@ def create_mysql_uri(rds_username, rds_password, rds_hostname, rds_port, rds_db_
            '@' + rds_hostname + ':' + rds_port + '/' + rds_db_name
 
 class Config(object):
-    SECRET_KEY = ''.join([random.choice(string.ascii_letters + string.digits) for n in xrange(32)])
+    #SECRET_KEY = ''.join([random.choice(string.ascii_letters + string.digits) for n in xrange(32)])
+    SECRET_KEY = 'secret' # gunicorn workers fail to start app without it
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
     SQLALCHEMY_RECORD_QUERIES = True
     SQLALCHEMY_TRACK_MODIFICATIONS = False
