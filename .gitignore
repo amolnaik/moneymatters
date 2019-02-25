@@ -10,3 +10,4 @@ obsolete/
 *.ipynb
 *.yml
 application.py
+config.py
