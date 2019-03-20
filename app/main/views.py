@@ -15,6 +15,7 @@ import numpy as np
 from app import db
 from flask import current_app
 from datetime import datetime
+from datetime import date
 from datetime import timedelta
 from app.utils import run_scheduler
 from app.utils import reformat
@@ -110,20 +111,31 @@ def account(name):
 
     s = run_scheduler.RunScheduler()
     for st in schedueld_transactions:
+
         if (st is not None):
-            sd = s.get_template_transactions_with_start(st.day, st.frequency,
-                                                        st.interval, st.start)
-            tt_['stid'].append(st.id)
-            tt_['date'].append(sd[0])
-            tt_['amount'].append(st.amount)
-            tt_['type'].append('electronic')
-            tt_['description'].append(st.description)
-            tt_['category'].append(st.category)
-            tt_['status'].append(False)
-            tt_['accountid'].append(account.id)
-            tt_['tag'].append(st.tag)
-            tt_['payee'].append(st.payee)
-        current_app.logger.info('Scheduled transactions found')
+            #sd = s.get_template_transactions_with_start(st.day, st.frequency,
+            #                                            st.interval, st.start)
+            sd = s.get_template_transactions_with_start_end(st.day, st.frequency,
+                                                        st.interval, st.start, st.end)
+            try:
+                if sd:
+                    if st.active:
+                        tt_['stid'].append(st.id)
+                        tt_['date'].append(sd[0])
+                        tt_['amount'].append(st.amount)
+                        tt_['type'].append('electronic')
+                        tt_['description'].append(st.description)
+                        tt_['category'].append(st.category)
+                        tt_['status'].append(False)
+                        tt_['accountid'].append(account.id)
+                        tt_['tag'].append(st.tag)
+                        tt_['payee'].append(st.payee)
+                    else:
+                        current_app.logger.info('No active scheduled transactions found')
+                else:
+                    current_app.logger.info('No scheduled transactions found')
+            except:
+                current_app.logger.info('Error in calculating scheduled transactions')
 
 
     # create  dataframe out of tt_ or send empty
@@ -212,10 +224,10 @@ def show_template_transactions(name):
 
     if request.method == "POST":
         data = json.loads(request.data)
-        if data.get('approve'):
+
+        if data.get('approve') == True:
 
             current_app.logger.info('Received Post request to approve scheduled transaction')
-
             #ttype = TransactionType.query.filter_by(ttype=data.get('typeid')).first()
             transaction = Transaction(date=datetime.strptime(data.get('date'), "%Y-%m-%dT%H:%M:%S.%fZ").date(),
                                       amount=data.get('amount'),
@@ -224,13 +236,22 @@ def show_template_transactions(name):
                                       category=data.get('category'),
                                       subcategory=data.get('subcategory'),
                                       tag=data.get('tag'),
-                                      status=data.get('status'),
+                                      status=True, #data.get('status'),
                                       accountid=account.id,
                                       payee=data.get('payee')).save()
 
             st = ScheduledTransaction.query.get(data.get('stid'))
             st.last_approved = datetime.today().date()
-            st.start = transaction.date.date() + timedelta(days=1)
+            #print datetime.combine(transaction.date, datetime.min.time())
+            restart = datetime.combine(transaction.date, datetime.min.time())
+            st.start = restart.date() + timedelta(days=1)
+
+        else:
+
+            st = ScheduledTransaction.query.get(data.get('stid'))
+            #st.last_approved = datetime.today().date()
+            st.start = datetime.strptime(data.get('date'), "%Y-%m-%dT%H:%M:%S.%fZ").date()
+
 
     return redirect(url_for("main.account", name=name))
 
@@ -732,9 +753,11 @@ def new_scheduled_transaction(name):
     account = Account.query.filter_by(name=name).first_or_404()
     s_transactions = [st.to_dict() for st in account.scheduled_transactions]
 
+    '''
     if request.method == "POST":
         current_app.logger.info('Received Post request to edit scheduled transaction')
         try:
+
             data = json.loads(request.data)
             st = account.scheduled_transactions.filter_by(id=data.get('id')).first()
             st.frequency = data.get('frequency')
@@ -756,6 +779,7 @@ def new_scheduled_transaction(name):
             #print request
             current_app.logger.error('Received Post request with errors')
 
+    '''
 
     df = pd.DataFrame.from_dict(s_transactions)
     if not df.empty:
@@ -812,21 +836,40 @@ def new_scheduled_transaction(name):
                             data=df.to_json(orient='records', date_format='iso'),
                             form=form)
 
-'''
-@main.errorhandler(404)
-def page_not_found(e):
+@main.route('/accounts/<string:name>/transactions/edit_scheduled/', methods=['POST'])
+@login_required
+def edit_scheduled_transaction(name):
 
-    ts = strftime('[%Y-%b-%d %H:%M]')
-    tb = traceback.format_exc()
-    current_app.logger.error('%s %s %s %s %s 5xx INTERNAL SERVER ERROR\n%s',
-                  ts,
-                  request.remote_addr,
-                  request.method,
-                  request.scheme,
-                  request.full_path,
-                  tb)
-    return render_template('404.html'), 404
-'''
+    account = Account.query.filter_by(name=name).first_or_404()
+    s_transactions = [st.to_dict() for st in account.scheduled_transactions]
+
+    if request.method == "POST":
+        current_app.logger.info('Received Post request to edit scheduled transaction')
+        try:
+            data = json.loads(request.data)
+            st = account.scheduled_transactions.filter_by(id=data.get('id')).first()
+            st.frequency = data.get('frequency')
+            st.interval = data.get('interval')
+            st.day = data.get('day')
+            st.start = datetime.strptime(data.get('start'), "%Y-%m-%dT%H:%M:%S.%fZ").date()
+            st.end = datetime.strptime(data.get('end'), "%Y-%m-%dT%H:%M:%S.%fZ").date()#
+            #st.approved = data.get('approved')
+            #print data.get('active')
+            st.active = data.get('active')
+            st.amount = data.get('amount')
+            st.description = data.get('description')
+            st.category = data.get('category')
+            st.subcategory = data.get('subcategory')
+            st.payee = data.get('payee')
+            st.type = data.get('type')
+            #st.tag = data.get('tag')
+            db.session.commit()
+        except:
+            #print request
+            current_app.logger.error('Received Post request with errors')
+
+    return redirect(url_for('main.new_scheduled_transaction', name=name))
+
 
 @main.after_request
 def after_request(response):
@@ -842,131 +885,3 @@ def after_request(response):
                         request.full_path,
                         response.status)
     return response
-
-
-'''
-@main.route('/accounts/<string:name>/transactions/dashboard/', methods=['GET', 'POST'])
-#@login_required
-def show_dashboard(name):
-
-    account = Account.query.filter_by(name=name).first_or_404()
-    transactions = [transaction.to_dict() for transaction in account.transactions]
-    # Temp: convert type id to validate_on_submit
-    #typeids = ['None', 'Credit Card', 'Cash', 'Transfer',
-    #            'Debit Card', 'Electronic Payment', 'Deposit']
-
-    df = pd.DataFrame.from_dict(transactions)
-    if not df.empty:
-        df['date'] = pd.to_datetime(df['date'])
-        df = df.sort_values(by='date')
-        df['year'] = df['date'].dt.year
-        df['month'] = df['date'].dt.month
-        df['yearmonth'] = df['date'].apply(lambda x: x.strftime('%Y-%m'))
-
-
-    custom_style = BlueStyle(
-                      background='transparent',
-                      plot_background='transparent',
-                      #foreground='#53E89B',
-                      #foreground_strong='#53A0E8',
-                      #foreground_subtle='#630C0D',
-                      opacity='.6',
-                      opacity_hover='.2',
-                      font_family='googlefont:Raleway',
-                      transition='50ms ease-in')
-
-    bar_chart = pygal.StackedBar(style=custom_style, legend_at_bottom=True, show_minor_x_labels=False)
-    line_chart = pygal.Line(style=custom_style, legend_at_bottom=True, fill=True, show_minor_x_labels=False)
-    typeid_chart = pygal.StackedBar(style=custom_style, legend_at_bottom=True, show_minor_x_labels=False)
-
-    #get filter parameters
-    form = FilterTransactionForm()
-
-    if form.validate_on_submit():
-        # get filtered dataframe
-        df_filtered = _get_filtered_dataframe(form, df)
-        #df_filtered.replace(typeids, inplace = True)
-
-        if form.show_by.data == 'm':
-
-            current_app.logger.info('Showing monthly aggregated data')
-
-            # Spend analysis: according to tag
-            df_tag_pivoted = df_filtered.groupby(['yearmonth', 'tag'])['amount'].agg('sum').reset_index() \
-                                        .pivot(index='yearmonth', columns='tag', values='amount') \
-                                        .reset_index().rename_axis(None, axis=1) \
-                                        .fillna(0)
-            bar_chart.x_labels = df_tag_pivoted['yearmonth']
-            bar_chart.x_label_rotation = -90
-            bar_chart.x_labels_major = df_tag_pivoted['yearmonth'][0::6].tolist()
-
-            tags = df_tag_pivoted.columns.tolist()
-            tags.remove('yearmonth')
-            # Spend analysis by type
-            df_type_pivoted = df_filtered.groupby(['yearmonth', 'type'])['amount'].agg('sum').reset_index() \
-                                        .pivot(index='yearmonth', columns='type', values='amount') \
-                                        .reset_index().rename_axis(None, axis=1) \
-                                        .fillna(0)
-            typeid_chart.x_labels = df_type_pivoted['yearmonth']
-            typeid_chart.x_label_rotation = -90
-            typeid_chart.x_labels_major = df_type_pivoted['yearmonth'][0::6].tolist()
-
-            typeids = df_type_pivoted.columns.tolist()
-            typeids.remove('yearmonth')
-
-            # closing balance
-            df_balance = df_filtered.groupby('yearmonth')['amount'].sum() \
-                                    .cumsum().reset_index()
-            df_balance['amount'] = df_balance['amount'] + account.balance
-            line_chart.x_labels = df_balance['yearmonth']
-            line_chart.x_label_rotation = -90
-            line_chart.x_labels_major = df_balance['yearmonth'][0::4].tolist()
-
-        else:
-            current_app.logger.info('Showing yearly aggregated data')
-
-            df_tag_pivoted = df_filtered.groupby(['year', 'tag'])['amount'].agg('sum').reset_index() \
-                                        .pivot(index='year', columns='tag', values='amount') \
-                                        .reset_index().rename_axis(None, axis=1) \
-                                        .fillna(0)
-            bar_chart.x_labels = map(str, df_tag_pivoted['year'])
-            tags = df_tag_pivoted.columns.tolist()
-            tags.remove('year')
-
-            # Spend analysis by type
-            df_type_pivoted = df_filtered.groupby(['year', 'type'])['amount'].agg('sum').reset_index() \
-                                        .pivot(index='year', columns='type', values='amount') \
-                                        .reset_index().rename_axis(None, axis=1) \
-                                        .fillna(0)
-
-            typeid_chart.x_labels = map(str, df_type_pivoted['year'])
-
-            typeids = df_type_pivoted.columns.tolist()
-            typeids.remove('year')
-
-            # closing balance
-            df_balance = df_filtered.groupby('year')['amount'].sum() \
-                                    .cumsum().reset_index() + account.balance
-            line_chart.x_labels = bar_chart.x_labels
-
-        bar_chart.title = 'Spend by Tags'
-        if 'Salary' in tags: tags.remove('Salary')
-        if 'not provided' in tags: tags.remove('not provided')
-        for t in tags:
-            bar_chart.add(t, df_tag_pivoted[t])
-
-        typeid_chart.title = 'Spend by Type'
-        for t in typeids:
-            typeid_chart.add(t, df_type_pivoted[t])
-
-        line_chart.add("Balance", df_balance['amount'])
-        line_chart.title = 'Closing Balance'
-
-    chart = bar_chart.render_data_uri()
-    line = line_chart.render_data_uri()
-    type_chart = typeid_chart.render_data_uri()
-
-    return render_template('dashboard.html', account=account,
-                            chart = chart, line=line, typechart = type_chart, form=form)
-
-'''

@@ -268,7 +268,7 @@ $("#example-table3").tabulator({
 		selectable:true,
     columns:[
 				// put id field here to pass back to server
-			  { title:"Date", field:"date", sorter:"date", editor:dateEditor, formatter:function(cell, formatterParams){
+			  { title:"Date", field:"date", editor:dateEditor, formatter:function(cell, formatterParams){
 	        //cell - the cell component
 	        //formatterParams - parameters set for the column
 					return moment.utc(cell.getValue()).format("DD/MM/YYYY"); //return the contents of the cell;

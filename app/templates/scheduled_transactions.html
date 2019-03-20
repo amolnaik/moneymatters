@@ -146,7 +146,7 @@
           {title:"Approved", field:"approved", editor:'input', formatter:function(cell, formatterParams){
               return moment(cell.getValue()).format("DD/MM/YYYY"); //return the contents of the cell;
           }},
-          {title:"Active", field:"active", editor:'input'},
+          {title:"Active", field:"active", editor: true, formatter:"tickCross"},
       ],
 
     dataLoaded:function(data){
@@ -163,7 +163,7 @@
  				//var test = { "name":"John", "age":30, "city":"New York"};
  				var test = cell.getData();
  				$.ajax({
- 	            url: '{{ url_for('main.new_scheduled_transaction', name=account.name) }}',
+ 	            url: '{{ url_for('main.edit_scheduled_transaction', name=account.name) }}',
  		          data: JSON.stringify(test),
  	            type: 'POST',
  							contentType: 'application/json;charset=UTF-8',

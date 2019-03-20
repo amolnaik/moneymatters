@@ -40,3 +40,12 @@ class RunScheduler():
                          bymonthday=monthday, dtstart=start)
 
          return [d.date() for d in next]
+
+
+    def get_template_transactions_with_start_end(self, monthday, frequency, interval, start, end):
+         #today = datetime.now().date()
+
+         next = dr.rrule(freq=self.frequencies[str(frequency)], interval=interval, count=1,
+                         bymonthday=monthday, dtstart=start,until=end)
+
+         return [d.date() for d in next]
