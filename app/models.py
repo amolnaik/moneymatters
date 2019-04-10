@@ -45,7 +45,6 @@ class BaseModel:
     def from_dict(cls, model_dict):
         return cls(**model_dict).save()
 
-
 class User(UserMixin, db.Model, BaseModel):
 
     __tablename__ = 'user'
@@ -256,16 +255,12 @@ class Account(db.Model, BaseModel):
             else:
                 return cb + self._balance
 
-
-
-
 class TransactionType(db.Model, BaseModel):
 
     __tablename__ = 'transactiontype'
 
     id = db.Column(db.Integer, primary_key=True,nullable=True)
     ttype = db.Column('ttype', db.String(128))
-
 
 class CategoryType(db.Model, BaseModel):
 
@@ -280,8 +275,6 @@ class SubCategoryType(db.Model, BaseModel):
 
     id = db.Column(db.Integer, primary_key=True,nullable=True)
     subcattype = db.Column('subcattype', db.String(128))
-
-
 
 class ScheduledTransaction(db.Model, BaseModel):
 

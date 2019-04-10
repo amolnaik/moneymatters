@@ -15,7 +15,6 @@ import numpy as np
 from app import db
 from flask import current_app
 from datetime import datetime
-from datetime import date
 from datetime import timedelta
 from app.utils import run_scheduler
 from app.utils import reformat
@@ -464,6 +463,7 @@ def set_data(name):
         current_app.logger.info('Received request to edit data')
 
         data = json.loads(request.data)
+        print data.get('status')
         t = account.transactions.filter_by(id=data.get('tid')).first()
         # ToDo: Check if the whole record needs to be updated
         t.date = datetime.strptime(data.get('date'), "%Y-%m-%dT%H:%M:%S.%fZ").date()
@@ -474,7 +474,7 @@ def set_data(name):
         t.subcategory = data.get('subcategory')
         t.description = data.get('description')
         t.payee = data.get('payee')
-        t.status = True if data.get('status') == 'true' else False
+        t.status = True if data.get('status') == True else False
         t.type = data.get('type')
         t.tag = data.get('tag')
         db.session.commit()
@@ -483,166 +483,16 @@ def set_data(name):
 
     return render_template('transaction_table.html', account=account)
 
-@main.route('/accounts/<string:name>/transactions/chart_data/', methods=['GET', 'POST'])
-@login_required
-def show_chart_data(name):
-
-    account = Account.query.filter_by(name=name).first_or_404()
-    # get all transactions from the account
-    #transactions = [transaction.to_dict() for transaction in account.transactions]
-    transactions = [transaction.to_dict() for transaction in account.transactions.filter_by(status=True)]
-
-    # format trasaction dataframe nicely
-    df = pd.DataFrame.from_dict(transactions)
-    if not df.empty:
-        df['date'] = pd.to_datetime(df['date'])
-        df = df.sort_values(by='date')
-        df['year'] = df['date'].dt.year
-        df['month'] = df['date'].dt.month
-        df['yearmonth'] = df['date'].apply(lambda x: x.strftime('%Y-%m'))
-        # good place to add column for closing balance
-        df['closing_balance'] = df.amount.cumsum() + account.balance
-
-    df_filtered = filterdata(df, request)
-
-    set_frequency = request.args.get('frequency', '', type=str)
-    #print (set_frequency)
-    if set_frequency == 'm':
-
-        df_balance = df_filtered.groupby('yearmonth')['closing_balance'].last().reset_index()
-
-        df_tag_pivoted = df_filtered.groupby(['yearmonth', 'tag'])['amount'].agg('sum').reset_index() \
-                                    .pivot(index='yearmonth', columns='tag', values='amount') \
-                                    .reset_index().rename_axis(None, axis=1) \
-                                    .fillna(0)
-
-        df_cat_pivoted = df_filtered.groupby(['yearmonth', 'category'])['amount'].agg('sum').reset_index() \
-                                    .pivot(index='yearmonth', columns='category', values='amount') \
-                                    .reset_index().rename_axis(None, axis=1) \
-                                    .fillna(0)
-
-        df_subcat_pivoted = df_filtered.groupby(['yearmonth', 'subcategory'])['amount'].agg('sum').reset_index() \
-                                    .pivot(index='yearmonth', columns='subcategory', values='amount') \
-                                    .reset_index().rename_axis(None, axis=1) \
-                                    .fillna(0)
-
-    elif set_frequency == 'l12m':
-
-        df_balance = df_filtered.set_index('date').last('12M').reset_index() \
-                    .groupby('yearmonth')['closing_balance'].last().reset_index()
-
-        df_tag_pivoted = df_filtered.set_index('date').last('12M').reset_index()\
-        .groupby(['yearmonth', 'tag'])['amount'].agg('sum').reset_index() \
-        .pivot(index='yearmonth', columns='tag', values='amount') \
-        .reset_index().rename_axis(None, axis=1) \
-        .fillna(0)
-
-        df_cat_pivoted =  df_filtered.set_index('date').last('12M').reset_index()\
-        .groupby(['yearmonth', 'category'])['amount'].agg('sum').reset_index() \
-        .pivot(index='yearmonth', columns='category', values='amount') \
-        .reset_index().rename_axis(None, axis=1) \
-        .fillna(0)
-
-        df_subcat_pivoted = df_filtered.set_index('date').last('12M').reset_index()\
-        .groupby(['yearmonth', 'subcategory'])['amount'].agg('sum').reset_index() \
-        .pivot(index='yearmonth', columns='subcategory', values='amount') \
-        .reset_index().rename_axis(None, axis=1) \
-        .fillna(0)
-
-    elif set_frequency == 'l3m':
-
-        df_balance = df_filtered.set_index('date').last('3M').reset_index() \
-                    .groupby('yearmonth')['closing_balance'].last().reset_index()
-
-        df_tag_pivoted = df_filtered.set_index('date').last('3M').reset_index()\
-        .groupby(['yearmonth', 'tag'])['amount'].agg('sum').reset_index() \
-        .pivot(index='yearmonth', columns='tag', values='amount') \
-        .reset_index().rename_axis(None, axis=1) \
-        .fillna(0)
-
-        df_cat_pivoted =  df_filtered.set_index('date').last('3M').reset_index()\
-        .groupby(['yearmonth', 'category'])['amount'].agg('sum').reset_index() \
-        .pivot(index='yearmonth', columns='category', values='amount') \
-        .reset_index().rename_axis(None, axis=1) \
-        .fillna(0)
-
-        df_subcat_pivoted = df_filtered.set_index('date').last('3M').reset_index()\
-        .groupby(['yearmonth', 'subcategory'])['amount'].agg('sum').reset_index() \
-        .pivot(index='yearmonth', columns='subcategory', values='amount') \
-        .reset_index().rename_axis(None, axis=1) \
-        .fillna(0)
-
-    else:
-
-        df_balance = df.groupby('year')['closing_balance'].last().reset_index()
-
-        df_tag_pivoted = df.groupby(['year', 'tag'])['amount'].agg('sum').reset_index() \
-        .pivot(index='year', columns='tag', values='amount') \
-        .reset_index().rename_axis(None, axis=1) \
-        .fillna(0)
-
-        df_cat_pivoted = df.groupby(['year', 'category'])['amount'].agg('sum').reset_index() \
-        .pivot(index='year', columns='category', values='amount') \
-        .reset_index().rename_axis(None, axis=1) \
-        .fillna(0)
-
-        df_subcat_pivoted = df.groupby(['year', 'subcategory'])['amount'].agg('sum').reset_index() \
-        .pivot(index='year', columns='subcategory', values='amount') \
-        .reset_index().rename_axis(None, axis=1) \
-        .fillna(0)
-
-    return  json.dumps({ 'frequency' : set_frequency,
-        'balance': df_balance.to_dict(orient='records'),
-        'by_tags': df_tag_pivoted.to_dict(orient='records'),
-        'by_category': df_cat_pivoted.to_dict(orient='records'),
-        'by_subcategory': df_subcat_pivoted.to_dict(orient='records')
-        })
-
 
 @main.route('/accounts/<string:name>/transactions/dashboard/', methods=['GET'])
 @login_required
 def show_charts(name):
 
     account = Account.query.filter_by(name=name).first_or_404()
-    # get all transactions from the account
-    #transactions = [transaction.to_dict() for transaction in account.transactions]
-    transactions = [transaction.to_dict() for transaction in account.transactions.filter_by(status=True)]
-
-    # format trasaction dataframe nicely
-    df = pd.DataFrame.from_dict(transactions)
-    if not df.empty:
-        df['date'] = pd.to_datetime(df['date'])
-        df = df.sort_values(by='date')
-        df['year'] = df['date'].dt.year
-        df['month'] = df['date'].dt.month
-        df['yearmonth'] = df['date'].apply(lambda x: x.strftime('%Y-%m'))
-        # good place to add column for closing balance
-        df['closing_balance'] = df.amount.cumsum() + account.balance
-
     form = FilterTransactionForm()
 
-    df_balance = df.groupby('year')['closing_balance'].last().reset_index()
+    return render_template('charts.html', account=account, form=form)
 
-    df_tag_pivoted = df.groupby(['year', 'tag'])['amount'].agg('sum').reset_index() \
-    .pivot(index='year', columns='tag', values='amount') \
-    .reset_index().rename_axis(None, axis=1) \
-    .fillna(0)
-
-    df_cat_pivoted = df.groupby(['year', 'category'])['amount'].agg('sum').reset_index() \
-    .pivot(index='year', columns='category', values='amount') \
-    .reset_index().rename_axis(None, axis=1) \
-    .fillna(0)
-
-    df_subcat_pivoted = df.groupby(['year', 'subcategory'])['amount'].agg('sum').reset_index() \
-    .pivot(index='year', columns='subcategory', values='amount') \
-    .reset_index().rename_axis(None, axis=1) \
-    .fillna(0)
-
-    return render_template('charts.html', account=account, form=form,
-            data=df_balance.to_json(orient='records', date_format='iso'),
-            data_by_tags = df_tag_pivoted.to_json(orient='records', date_format='iso'),
-            data_by_category = df_cat_pivoted.to_json(orient='records', date_format='iso'),
-            data_by_subcategory = df_subcat_pivoted.to_json(orient='records', date_format='iso'))
 
 def _get_user():
     return current_user.username if current_user.is_authenticated else None
@@ -752,34 +602,6 @@ def new_scheduled_transaction(name):
 
     account = Account.query.filter_by(name=name).first_or_404()
     s_transactions = [st.to_dict() for st in account.scheduled_transactions]
-
-    '''
-    if request.method == "POST":
-        current_app.logger.info('Received Post request to edit scheduled transaction')
-        try:
-
-            data = json.loads(request.data)
-            st = account.scheduled_transactions.filter_by(id=data.get('id')).first()
-            st.frequency = data.get('frequency')
-            st.interval = data.get('interval')
-            st.day = data.get('day')
-            st.start = datetime.strptime(data.get('start'), "%Y-%m-%dT%H:%M:%S.%fZ").date()
-            st.end = datetime.strptime(data.get('end'), "%Y-%m-%dT%H:%M:%S.%fZ").date()#
-            #st.approved = data.get('approved')
-            st.active = data.get('active')
-            st.amount = data.get('amount')
-            st.description = data.get('description')
-            st.category = data.get('category')
-            st.subcategory = data.get('subcategory')
-            st.payee = data.get('payee')
-            st.type = data.get('type')
-            #st.tag = data.get('tag')
-            db.session.commit()
-        except:
-            #print request
-            current_app.logger.error('Received Post request with errors')
-
-    '''
 
     df = pd.DataFrame.from_dict(s_transactions)
     if not df.empty:

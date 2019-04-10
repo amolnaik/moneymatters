@@ -278,7 +278,7 @@ $("#example-table3").tabulator({
 				{title:"Subcategory", field:"subcategory", editor:'input'},
         {title:"Description", field:"description", editor:'input'},
         {title:"Payee", field:"payee", editor:'input'},
-        {title:"Status", field:"status", editor:'input'},
+        {title:"Status", field:"status", editor: true, formatter:"tickCross"},
         {title:"Tag", field:"tag", editor:"input"},
         {title:"Type", field:"type", editor:'select', editorParams:{"Unknown":"Unknown", "Credit card":"Credit Card",
 			"Check": "Check", "Cash": "Cash", "Transfer": "Transfer", "Internal Transfer": "Internal",
@@ -316,16 +316,14 @@ $("#example-table3").tabulator({
     },
 
 		cellEdited:function(cell){
-        //This callback is called any time a cell is edidted
-				//var test = { "name":"John", "age":30, "city":"New York"};
-				var test = cell.getData();
+
 				$.ajax({
 	            url: '{{ url_for('main.set_data', name=account.name) }}',
-		          data: JSON.stringify(test),
+		          data: JSON.stringify(cell.getData()),
 	            type: 'POST',
 							contentType: 'application/json;charset=UTF-8',
 	            success: function(response) {
-	                console.log('success');
+	                console.log(JSON.stringify(cell.getData()));
 	            },
 	            error: function(error) {
 	                console.log(error);

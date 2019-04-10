@@ -4,9 +4,9 @@
 <script src="//code.jquery.com/jquery-1.10.2.js"></script>
 <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
 <script src="https://code.highcharts.com/highcharts.js"></script>
-<script src="https://code.highcharts.com/modules/exporting.js"></script>
-<script src="https://code.highcharts.com/modules/export-data.js"></script>
-<script src="https://code.highcharts.com/modules/streamgraph.js"></script>
+<!-- script src="https://code.highcharts.com/modules/exporting.js"></script -->
+<!-- script src="https://code.highcharts.com/modules/export-data.js"></script-->
+
 <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/css-toggle-switch@latest/dist/toggle-switch.css" />
 
 <script>
@@ -77,70 +77,38 @@
     </fieldset>
   </div>
 </div>
+
 <div id="container_stacked_bar_chart" style="width:100%; height:800px;"></div>
 <div id="container_pie_chart" style="width:100%; height:600px;"></div>
+<div id="container_area_chart" style="width:100%; height:600px;"></div>
 
 <script>
 
-  function GetChartData(f){
-    var set_frequency = '';
-    $.getJSON("{{ url_for('main.show_chart_data', name=account.name) }}", { frequency : f},
-    function(data) {
-      var all_data = data;
-      set_frequency = all_data['frequency'];
-      var balance = all_data['balance'];
-      var aggregated_tags = all_data['by_tags'];
-      var aggregated_cats = all_data['by_category'];
-      var aggregated_subcats = all_data['by_subcategory'];
-      PlotTimeSeries(balance);
-      GetTagData();
-      //PlotByCategories(aggregated_cats);
-      //PlotBySubcategories(aggregated_subcats);
-    });
-    document.getElementById('all_by_year').checked = false;
-    document.getElementById('all_by_months').checked = false;
-    document.getElementById('last_12_months').checked = false;
-    document.getElementById('last_3_months').checked = false;
-    switch(set_frequency) {
-      case 'y':
-        document.getElementById('all_by_year').checked = true;
-        break;
-      case 'm':
-        document.getElementById('all_by_months').checked = true;
-        break;
-      case 'l12m':
-        document.getElementById('last_12_months').checked = true;
-        break;
-      case 'l3m':
-          document.getElementById('last_3_months').checked = true;
-        break;
-    }
-  };
+  function GetFrequencyTab(){
+    var f_clicked = '';
 
-  function GetTagData(){
-
-    var f = ' ';
     if (document.getElementById('all_by_year').checked){
-        f = 'y';
+      f_clicked = 'y';
     }
-    else if (document.getElementById('all_by_months').checked){
-      f  = 'm';
+    else if (  document.getElementById('all_by_months').checked){
+      f_clicked = 'm';
     }
     else if (document.getElementById('last_12_months').checked){
-        f = 'l12m';
-    }
-    else if (document.getElementById('last_3_months').checked){
-      f  = 'l3m';
+      f_clicked = 'l12m';
     }
     else{
-      console.log("Did not find a match!")
-      f  = 'y';
+      f_clicked = 'l3m';
     }
-    //document.getElementById('all_by_year').checked = false;
-    //document.getElementById('all_by_months').checked = false;
-    //document.getElementById('last_12_months').checked = false;
-    //document.getElementById('last_3_months').checked = false;
-    $.getJSON("{{ url_for('main.show_chart_data', name=account.name) }}", {
+
+    return f_clicked;
+
+  }
+
+  function GetChartData(f){
+
+    var set_frequency = '';
+
+    $.getJSON("{{ url_for('dashboard.get_chart_data', name=account.name) }}", {
       frequency : f,
       date_from: $('input[name="date_from"]').val(),
       date_to  : $('input[name="date_to"]').val(),
@@ -151,57 +119,47 @@
       description_like: $('input[name="description_like"]').val()
     },
     function(data) {
-      var all_data = data;
-      var set_frequency =  all_data['frequency'];
-      var aggregated_tags = all_data['by_tags'];
-      switch(set_frequency) {
-        case 'y':
-          document.getElementById('all_by_year').checked = true;
-          break;
-        case 'm':
-          document.getElementById('all_by_months').checked = true;
-          break;
-        case 'l12m':
-          document.getElementById('last_12_months').checked = true;
-          break;
-        case 'l3m':
-            document.getElementById('last_3_months').checked = true;
-          break;
-        default:
-          console.log("Could not set Frequency!")
-          console.log(set_frequency)
-      }
-      PlotByTags(aggregated_tags);
+        var balance = data['balance'];
+        PlotTimeSeries(balance);
+        GetTagData();
     });
+
+    SetFrequencyTab(f);
+
+  };
+
+  function GetTagData(){
+
+    f = GetFrequencyTab();
+
+    $.getJSON("{{ url_for('dashboard.get_chart_data', name=account.name) }}", {
+      frequency : f,
+      date_from: $('input[name="date_from"]').val(),
+      date_to  : $('input[name="date_to"]').val(),
+      amount_ge: $('input[name="amount_ge"]').val(),
+      amount_le: $('input[name="amount_le"]').val(),
+      category_like: $('input[name="category_like"]').val(),
+      tags_like: $('input[name="tags_like"]').val(),
+      description_like: $('input[name="description_like"]').val()
+    },
+    function(data) {
+      var aggregated_tags = data['by_tags'];
+      var aggregated_tags_percent = data['tags_by_percent'];
+      PlotPivotData(aggregated_tags, aggregated_tags_percent);
+
+    });
+
     document.getElementById('tags').checked = true;
     document.getElementById('category').checked = false;
     document.getElementById('subcategory').checked = false;
+
   };
 
   function GetCategoryData(){
 
-    var f = ' ';
-    if (document.getElementById('all_by_year').checked){
-        f = 'y';
-    }
-    else if (document.getElementById('all_by_months').checked){
-      f  = 'm';
-    }
-    else if (document.getElementById('last_12_months').checked){
-        f = 'l12m';
-    }
-    else if (document.getElementById('last_3_months').checked){
-      f  = 'l3m';
-    }
-    else{
-      console.log("Did not find a match for Frequency!")
-      f = 'y'
-    }
-    document.getElementById('all_by_year').checked = false;
-    document.getElementById('all_by_months').checked = false;
-    document.getElementById('last_12_months').checked = false;
-    document.getElementById('last_3_months').checked = false;
-    $.getJSON("{{ url_for('main.show_chart_data', name=account.name) }}",
+    f = GetFrequencyTab();
+
+    $.getJSON("{{ url_for('dashboard.get_chart_data', name=account.name) }}",
     { frequency : f,
       date_from: $('input[name="date_from"]').val(),
       date_to  : $('input[name="date_to"]').val(),
@@ -212,56 +170,24 @@
       description_like: $('input[name="description_like"]').val()
     },
     function(data) {
-      var all_data = data;
-      var set_frequency =  all_data['frequency'];
-      var aggregated_cats = all_data['by_category'];
-      switch(set_frequency) {
-        case 'y':
-          document.getElementById('all_by_year').checked = true;
-          break;
-        case 'm':
-          document.getElementById('all_by_months').checked = true;
-          break;
-        case 'l12m':
-          document.getElementById('last_12_months').checked = true;
-          break;
-        case 'l3m':
-          document.getElementById('last_3_months').checked = true;
-          break;
-        default:
-          console.log("Could not set Frequency!")
-          console.log(set_frequency)
-      }
-      PlotByCategories(aggregated_cats);
+      var aggregated_cats = data['by_category'];
+      var aggregated_cats_percent = data['cats_by_percent'];
+
+      PlotPivotData(aggregated_cats, aggregated_cats_percent);
+
     });
+
     document.getElementById('tags').checked = false;
     document.getElementById('category').checked = true;
     document.getElementById('subcategory').checked = false;
+
   };
 
   function GetSubcategoryData(){
 
-    var f = ' ';
-    if (document.getElementById('all_by_year').checked){
-        f = 'y';
-    }
-    else if (document.getElementById('all_by_months').checked){
-      f  = 'm';
-    }
-    else if (document.getElementById('last_12_months').checked){
-        f = 'l12m';
-    }
-    else if (document.getElementById('last_3_months').checked){
-      f  = 'l3m';
-    }
-    else{
-      f = 'y'
-    }
-    document.getElementById('all_by_year').checked = false;
-    document.getElementById('all_by_months').checked = false;
-    document.getElementById('last_12_months').checked = false;
-    document.getElementById('last_3_months').checked = false;
-    $.getJSON("{{ url_for('main.show_chart_data', name=account.name) }}",
+    f = GetFrequencyTab();
+
+    $.getJSON("{{ url_for('dashboard.get_chart_data', name=account.name) }}",
     { frequency : f,
       date_from: $('input[name="date_from"]').val(),
       date_to  : $('input[name="date_to"]').val(),
@@ -272,33 +198,20 @@
       description_like: $('input[name="description_like"]').val()
     },
     function(data) {
-      var all_data = data;
-      var set_frequency =  all_data['frequency'];
-      var aggregated_subcats = all_data['by_subcategory'];
-      switch(set_frequency) {
-        case 'y':
-          document.getElementById('all_by_year').checked = true;
-          break;
-        case 'm':
-          document.getElementById('all_by_months').checked = true;
-          break;
-        case 'l12m':
-          document.getElementById('last_12_months').checked = true;
-          break;
-        case 'l3m':
-          document.getElementById('last_3_months').checked = true;
-          break;
-      }
-      PlotBySubcategories(aggregated_subcats);
+      var aggregated_subcats = data['by_subcategory'];
+      var aggregated_subcats_percent = data['subcats_by_percent'];
+
+      PlotPivotData(aggregated_subcats, aggregated_subcats_percent);
+
     });
+
     document.getElementById('tags').checked = false;
     document.getElementById('category').checked = false;
     document.getElementById('subcategory').checked = true;
+
   };
 
   function PlotTimeSeries(balance) {
-
-    //var data = JSON.parse('{{ data | safe}}')
 
     var data = balance
 
@@ -364,61 +277,82 @@
     });
   };
 
-  function PlotByTags(agg_tags) {
+  function PlotPivotData(agg_subject, agg_percent_subject){
 
-      //var data = JSON.parse('{{ data_by_tags | safe}}')
+    var data = agg_subject;
 
-      var data = agg_tags;
+    var chartData = new Array();
+    var categories = new Array();
+    var chartTicks = 10;
+    var chartXtitle = "yearmonth";
 
-      var chartData = new Array();
-      var categories = new Array();
-      var chartTicks = 10;
-      var chartXtitle = "yearmonth";
-
-      // Populate series
-      if(data[0]["yearmonth"] != undefined){
-        for (i = 0; i < data.length; i++){
-            categories.push([String(data[i].yearmonth)]);
-            delete data[i].yearmonth;
-            chartXtitle = "yearmonth";
-        }
+    // Populate series
+    if(data[0]["yearmonth"] != undefined){
+      for (i = 0; i < data.length; i++){
+          categories.push([String(data[i].yearmonth)]);
+          delete data[i].yearmonth;
+          chartXtitle = "yearmonth";
       }
-      else{
-        for (i = 0; i < data.length; i++){
-            categories.push([String(data[i].year)]);
-            delete data[i].year;
-            chartXtitle = "year";
-            chartTicks = 1;
-        }
+    }
+    else{
+      for (i = 0; i < data.length; i++){
+          categories.push([String(data[i].year)]);
+          delete data[i].year;
+          chartXtitle = "year";
+          chartTicks = 1;
       }
+    }
 
-      var nameArray = Object.keys(data[0]);
-      var chartData = [];
-      var pieChartData = [];
+    var nameArray = Object.keys(data[0]);
 
-      for (i=0; i < nameArray.length; i++){
-        var kv = {};
-        var kv_for_pie = {};
 
-        kv.name = nameArray[i];
-        kv_for_pie.name = nameArray[i];
-        var v = [];
-        var sum = 0;
-        for (j=0; j < data.length; j++){
-          v.push(data[j][nameArray[i]]);
+    var chartData = [];
+    var pieChartData = [];
+    var areaChartData = [];
 
-          if (data[j][nameArray[i]] < 0){
-            sum += Math.abs(data[j][nameArray[i]]);
-          }
+    for (i=0; i < nameArray.length; i++){
+      var kv = {};
+      var kv_for_pie = {};
 
+      kv.name = nameArray[i];
+      kv_for_pie.name = nameArray[i];
+
+      var v = [];
+      var sum = 0;
+      for (j=0; j < data.length; j++){
+
+        v.push(data[j][nameArray[i]]);
+
+        if (data[j][nameArray[i]] < 0){
+          sum += Math.abs(data[j][nameArray[i]]);
         }
-        kv_for_pie.y = sum;
-        kv.data = v;
-        chartData.push(kv);
-        pieChartData.push(kv_for_pie);
+
       }
 
-      //console.log(pieChartData);
+
+      var kv_for_area = {};
+      var v_area = [];
+
+      if ((nameArray[i] != 'not provided' && nameArray[i] != 'Income')){
+
+        for (j=0; j < agg_percent_subject.length; j++){
+            kv_for_area.name = nameArray[i];
+            v_area.push(agg_percent_subject[j][nameArray[i]]);
+        }
+
+          kv_for_area.data = v_area;
+          areaChartData.push(kv_for_area);
+      }
+
+      kv_for_pie.y = sum;
+      kv.data = v;
+
+      chartData.push(kv);
+      pieChartData.push(kv_for_pie);
+
+    }
+
+
 
       $('#container_pie_chart').highcharts({
 
@@ -493,8 +427,7 @@
       tooltip: {
         formatter: function () {
             return '<b>' + this.series.name + '</b><br/>' +
-                'Category Total: ' + this.point.y + '<br/>' +
-                'Total:' + this.point.stackTotal
+                   'Total: ' + this.point.y + '<br/>'
         },
         yDecimals: 2
 
@@ -514,308 +447,85 @@
 
       });
 
-  };
-
-  function PlotByCategories(agg_cats) {
-
-      //var data = JSON.parse('{{ data_by_category | safe}}')
-      var data = agg_cats;
-
-      var chartData = new Array();
-      var categories = new Array();
-      var chartTicks = 10;
-      var chartXtitle = "yearmonth";
-
-      // Populate series
-      if(data[0]["yearmonth"] != undefined){
-        for (i = 0; i < data.length; i++){
-            categories.push([String(data[i].yearmonth)]);
-            delete data[i].yearmonth;
-            chartXtitle = "yearmonth";
-        }
-      }
-      else{
-        for (i = 0; i < data.length; i++){
-            categories.push([String(data[i].year)]);
-            delete data[i].year;
-            chartXtitle = "year";
-            chartTicks = 1;
-        }
-      }
-
-      var nameArray = Object.keys(data[0]);
-      var chartData = [];
-      var pieChartData = [];
-
-      for (i=0; i < nameArray.length; i++){
-        var kv = {};
-        var kv_for_pie = {};
-
-        kv.name = nameArray[i];
-        kv_for_pie.name = nameArray[i];
-        var v = [];
-        var sum = 0;
-        for (j=0; j < data.length; j++){
-          v.push(data[j][nameArray[i]]);
-
-          if (data[j][nameArray[i]] < 0){
-            sum += Math.abs(data[j][nameArray[i]]);
-          }
-
-        }
-        kv_for_pie.y = sum;
-        kv.data = v;
-        chartData.push(kv);
-        pieChartData.push(kv_for_pie);
-      }
-
-      // console.log(pieChartData);
-
-      $('#container_pie_chart').highcharts({
+      $('#container_area_chart').highcharts({
 
         chart: {
-            type: 'pie'
-        },
-        title: {
-            text: 'Total Spend by Categories'
-        },
-        plotOptions: {
-            pie: {
-                animation: {
-                    duration: 750,
-                    easing: 'easeOutQuad'
-                },
-                allowPointSelect: true,
-                center: ['50%', '50%'],
-                cursor: 'pointer',
-                allowPointSelect: true,
-                showInLegend: true,
-                dataLabels: {
-                    enabled: false,
-                    style: {
-                        color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
-                    }
-                }
-              }
-        },
 
-        tooltip: {
-            pointFormat: '{point.y:.2f}'
-        },
-
-        series : [{
-          animation: {
-               duration: 750,
-               easing: 'easeOutQuad'
-           },
-          size: '90%',
-          innerSize: '55%',
-          colorByPoint: true,
-          data: pieChartData
-        }]
-      });
-
-      $('#container_stacked_bar_chart').highcharts({
-        chart: {
-          type: 'column'
-      },
-      title: {
-          text: 'Spend by Categories'
-      },
-
-      xAxis: {
-         categories: categories,
-         tickInterval: chartTicks,
+             type: 'area',
+             zoomType: 'x'
+         },
          title: {
-               text: chartXtitle,
+             text: 'Proportion of Income Spent'
+         },
+
+         xAxis: {
+             categories: categories,
+             tickInterval: chartTicks,
+
+         },
+         yAxis: {
+             title: {
+                 text: 'Percent'
              },
-     },
+             plotLines: [{
+                            id: 'limit-max',
+                            color: '#FF0000',
+                            dashStyle: 'ShortDash',
+                            width: 2,
+                            value: 100,
+                            zIndex: 0,
+                            label : {
+                              text : 'Max'
+                              }
+                            },
+                            {
+                              id: 'limit-recommended',
+                              color: '#008000',
+                              dashStyle: 'ShortDash',
+                              width: 2,
+                              value: 75,
+                              zIndex: 0,
+                              label : {
+                              text : 'Recommended'
+                                }
+                            }]
+         },
+         tooltip: {
 
-     yAxis: {
-
-          title: {
-              text: 'Total Spend By Categories'
-          },
-          stackLabels: {
-              enabled: true,
-          }
-      },
-
-      tooltip: {
-        formatter: function () {
-            return '<b>' + this.series.name + '</b><br/>' +
-                'Category Total: ' + this.point.y + '<br/>' +
-                'Total:' + this.point.stackTotal
-        },
-        yDecimals: 2
-
-      },
-
-      plotOptions: {
-          column: {
-              stacking: 'normal',
-          }
-      },
-
-      series: chartData
-
-      });
-
-  };
-
-  function PlotBySubcategories(agg_subcats) {
-
-      //var data = JSON.parse('{{ data_by_subcategory | safe}}')
-      // console.log(data)
-      var data = agg_subcats;
-
-      var chartData = new Array();
-      var categories = new Array();
-      var chartTicks = 10;
-      var chartXtitle = "yearmonth";
-
-      // Populate series
-      if(data[0]["yearmonth"] != undefined){
-        for (i = 0; i < data.length; i++){
-            categories.push([String(data[i].yearmonth)]);
-            delete data[i].yearmonth;
-            chartXtitle = "yearmonth";
-        }
-      }
-      else{
-        for (i = 0; i < data.length; i++){
-            categories.push([String(data[i].year)]);
-            delete data[i].year;
-            chartXtitle = "year";
-            chartTicks = 1;
-        }
-      }
-
-      var nameArray = Object.keys(data[0]);
-      var chartData = [];
-      var pieChartData = [];
-
-      for (i=0; i < nameArray.length; i++){
-        var kv = {};
-        var kv_for_pie = {};
-
-        kv.name = nameArray[i];
-        kv_for_pie.name = nameArray[i];
-        var v = [];
-        var sum = 0;
-        for (j=0; j < data.length; j++){
-          v.push(data[j][nameArray[i]]);
-
-          if (data[j][nameArray[i]] < 0){
-            sum += Math.abs(data[j][nameArray[i]]);
-          }
-
-        }
-        kv_for_pie.y = sum;
-        kv.data = v;
-        chartData.push(kv);
-        pieChartData.push(kv_for_pie);
-      }
-
-      // console.log(pieChartData);
-
-      $('#container_pie_chart').highcharts({
-
-        chart: {
-            type: 'pie'
-        },
-        title: {
-            text: 'Total Spend by Subcategories'
-        },
-        plotOptions: {
-            pie: {
-                animation: {
-                    duration: 750,
-                    easing: 'easeOutQuad'
-                },
-                allowPointSelect: true,
-                center: ['50%', '50%'],
-                cursor: 'pointer',
-                allowPointSelect: true,
-                showInLegend: true,
-                dataLabels: {
-                    enabled: false,
-                    style: {
-                        color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
-                    }
-                }
-              }
-        },
-
-        tooltip: {
-            pointFormat: '{point.y:.2f}'
-        },
-
-        series : [{
-          animation: {
-               duration: 750,
-               easing: 'easeOutQuad'
+           formatter: function () {
+               return '<b>' + this.series.name + '</b><br/>' +
+                      this.point.y + '%' +'<br/>'
            },
-          size: '90%',
-          innerSize: '55%',
-          colorByPoint: true,
-          data: pieChartData
-        }]
-      });
-
-      $('#container_stacked_bar_chart').highcharts({
-        chart: {
-          type: 'column'
-      },
-      title: {
-          text: 'Spend by Subcategories'
-      },
-
-      xAxis: {
-         categories: categories,
-         tickInterval: chartTicks,
-         title: {
-               text: chartXtitle,
-             },
-     },
-
-     yAxis: {
-
-          title: {
-              text: 'Total Spend By Subcategories'
-          },
-          stackLabels: {
-              enabled: true,
-          }
-      },
-
-      tooltip: {
-        formatter: function () {
-            return '<b>' + this.series.name + '</b><br/>' +
-                'Category Total: ' + this.point.y + '<br/>' +
-                'Total:' + this.point.stackTotal
-        },
-        yDecimals: 2
-
-      },
-
-      plotOptions: {
-          column: {
-              stacking: 'normal',
-          }
-      },
-
-      series: chartData
+           yDecimals: 2
+         },
+         plotOptions: {
+             area: {
+                 stacking: 'normal',
+                 lineColor: '#ffffff',
+                 lineWidth: 1,
+                 marker: {
+                    enabled: false,
+                     lineWidth: 1,
+                     lineColor: '#ffffff'
+                 }
+             }
+         },
+         series:areaChartData,
 
       });
+
+
+
 
   };
 
   function GetFilteredData(){
+
     document.getElementById('tags').checked = true;
     document.getElementById('category').checked = false;
     document.getElementById('subcategory').checked = false;
-    $.getJSON("{{ url_for('main.show_chart_data', name=account.name) }}",
+
+    $.getJSON("{{ url_for('dashboard.get_chart_data', name=account.name) }}",
     { frequency : 'm',
       date_from: $('input[name="date_from"]').val(),
       date_to  : $('input[name="date_to"]').val(),
@@ -865,6 +575,43 @@
     document.getElementById("tags_like").value = "";
     document.getElementById("description_like").value = "";
   };
+
+  function SetFrequencyTab(f_clicked){
+
+    document.getElementById('all_by_year').checked = false;
+    document.getElementById('all_by_months').checked = false;
+    document.getElementById('last_12_months').checked = false;
+    document.getElementById('last_3_months').checked = false;
+
+    switch(f_clicked) {
+      case 'y':
+          document.getElementById('all_by_year').checked = true;
+          document.getElementById('all_by_months').checked = false;
+          document.getElementById('last_12_months').checked = false;
+          document.getElementById('last_3_months').checked = false;
+          break;
+      case 'm':
+          document.getElementById('all_by_year').checked = false;
+          document.getElementById('all_by_months').checked = true;
+          document.getElementById('last_12_months').checked = false;
+          document.getElementById('last_3_months').checked = false;
+          break;
+      case 'l12m':
+          document.getElementById('all_by_year').checked = false;
+          document.getElementById('all_by_months').checked = false;
+          document.getElementById('last_12_months').checked = true;
+          document.getElementById('last_3_months').checked = false;
+          break;
+      case 'l3m':
+          document.getElementById('all_by_year').checked = false;
+          document.getElementById('all_by_months').checked = false;
+          document.getElementById('last_12_months').checked = false;
+          document.getElementById('last_3_months').checked = true;
+          break;
+    }
+
+  }
+
 
 </script>
 
