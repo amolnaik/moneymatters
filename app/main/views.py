@@ -100,50 +100,6 @@ def account(name):
 
     account = Account.query.filter_by(name=name).first_or_404()
 
-    # show schedueld transactions
-    today = datetime.today()
-    schedueld_transactions = [st for st in account.scheduled_transactions]
-
-    # ToDo: the scheduler runs the same rule again if the user logs
-    # in multiple times in a day
-    tt_ = defaultdict(list)
-
-    s = run_scheduler.RunScheduler()
-    for st in schedueld_transactions:
-
-        if (st is not None):
-            #sd = s.get_template_transactions_with_start(st.day, st.frequency,
-            #                                            st.interval, st.start)
-            sd = s.get_template_transactions_with_start_end(st.day, st.frequency,
-                                                        st.interval, st.start, st.end)
-            try:
-                if sd:
-                    if st.active:
-                        tt_['stid'].append(st.id)
-                        tt_['date'].append(sd[0])
-                        tt_['amount'].append(st.amount)
-                        tt_['type'].append('electronic')
-                        tt_['description'].append(st.description)
-                        tt_['category'].append(st.category)
-                        tt_['status'].append(False)
-                        tt_['accountid'].append(account.id)
-                        tt_['tag'].append(st.tag)
-                        tt_['payee'].append(st.payee)
-                    else:
-                        current_app.logger.info('No active scheduled transactions found')
-                else:
-                    current_app.logger.info('No scheduled transactions found')
-            except:
-                current_app.logger.info('Error in calculating scheduled transactions')
-
-
-    # create  dataframe out of tt_ or send empty
-    df_tt = pd.DataFrame.from_dict(tt_)
-    if not df_tt.empty:
-        df_tt['date'] = pd.to_datetime(df_tt['date'])
-    else:
-        current_app.logger.info('No scheduled transactions found')
-
     # get transaction types
     ttypechoices = [(ttp.id, ttp.ttype) for ttp
     in TransactionType.query.order_by(TransactionType.ttype).all()]
@@ -186,34 +142,102 @@ def account(name):
         current_app.logger.info('Transaction form could not be validated')
 
 
+    return render_template('transaction_overview.html',
+                            account=account, form=form)
 
-    # show transaction for this month
+
+@main.route('/accounts/<string:name>/scheduled_this_month/', methods=['GET'])
+@login_required
+def get_scheduled_transactions(name):
+
+    account = Account.query.filter_by(name=name).first_or_404()
+
+    # show schedueld transactions
+    today = datetime.today()
+    schedueld_transactions = [st for st in account.scheduled_transactions]
+
+    # ToDo: the scheduler runs the same rule again if the user logs
+    # in multiple times in a day
+    tt_ = defaultdict(list)
+
+    s = run_scheduler.RunScheduler()
+    for st in schedueld_transactions:
+
+        if (st is not None):
+            #sd = s.get_template_transactions_with_start(st.day, st.frequency,
+            #                                            st.interval, st.start)
+            sd = s.get_template_transactions_with_start_end(st.day, st.frequency,
+                                                        st.interval, st.start, st.end)
+            try:
+                if sd:
+                    if st.active:
+                        tt_['stid'].append(st.id)
+                        tt_['date'].append(sd[0])
+                        tt_['amount'].append(st.amount)
+                        tt_['type'].append('electronic')
+                        tt_['description'].append(st.description)
+                        tt_['category'].append(st.category)
+                        tt_['status'].append(False)
+                        tt_['accountid'].append(account.id)
+                        tt_['tag'].append(st.tag)
+                        tt_['payee'].append(st.payee)
+                    else:
+                        current_app.logger.info('No active scheduled transactions found')
+                else:
+                    current_app.logger.info('No scheduled transactions found')
+            except:
+                current_app.logger.info('Error in calculating scheduled transactions')
+
+
+    # create  dataframe out of tt_ or send empty
+    df_tt = pd.DataFrame.from_dict(tt_)
+    if not df_tt.empty:
+        #df_tt['date'] = pd.to_datetime(df_tt['date'])
+        #df_tt['date'] = pd.to_datetime(df_tt['date']).dt.strftime("%d/%m/%Y")
+        df_tt['date'] = pd.to_datetime(df_tt['date'])
+        df_tt = df_tt.sort_values(by=['date'], axis=0, ascending=False)
+    else:
+        df_tt = pd.DataFrame(columns = ['date', 'amount', 'type', 'category', 'subcategory',
+                                                          'payee', 'description', 'tag', 'status'])
+        current_app.logger.info('No scheduled transactions found')
+
+    return df_tt.to_json(orient='records', date_format='iso')
+
+
+@main.route('/accounts/<string:name>/latest/', methods=['GET'])
+@login_required
+def get_latest_transactions(name):
+
+    account = Account.query.filter_by(name=name).first_or_404()
+
     transactions = [transaction.to_dict() for transaction in account.transactions]
 
     if account.total_transactions_count > 0:
-        df = pd.DataFrame.from_dict(transactions)
-        df['date'] = pd.to_datetime(df['date'])
-        df = df.sort_values(by=['date'], axis=0, ascending=False)
 
+        df = pd.DataFrame.from_dict(transactions)
+        #df['date'] = pd.to_datetime(df['date']).dt.strftime("%m/%d/%Y")
+        df['date'] = pd.to_datetime(df['date'])
+        #df = df.sort_values(by='date', ascending=False)
+
+        df = df.sort_values(by=['date'], axis=0, ascending=False)
         today = datetime.today().date()
         df_last = df[df['date'] > (today - pd.Timedelta(days=30)).isoformat()]
 
         if df_last.empty:
-
             lastday = df.date.max().date()
             df_last = df[df['date'] > (lastday - pd.Timedelta(days=7)).isoformat()]
 
-        df_this_month = df_last #.reindex(columns = ['date', 'amount', 'type', 'category', 'subcategory',
-                                    #                'payee', 'description', 'tag', 'status'])
+        df_this_month = df_last
+
     else:
+
         df_this_month = pd.DataFrame(columns = ['date', 'amount', 'type', 'category', 'subcategory',
                                                           'payee', 'description', 'tag', 'status'])
 
         current_app.logger.info('No transactions for this month')
 
-    return render_template('transaction_overview.html',
-                            table=df_this_month.to_json(orient='records', date_format='iso'),
-                            account=account, form=form, dataframe=df_tt.to_json(orient='records', date_format='iso'))
+    return df_this_month.to_json(orient='records', date_format='iso')
+
 
 @main.route('/accounts/<string:name>/scheduled_transactions/', methods=['GET','POST'])
 @login_required
@@ -311,8 +335,8 @@ def upload_csv(name):
 
             if file_extension == 'json':
                 df = pd.read_json(os.path.join(current_app.config['UPLOAD_FOLDER'], filename), orient='records')
-                df['date'] = pd.to_datetime(df['date']).dt.strftime("%d/%m/%Y")
                 df['date'] = pd.to_datetime(df['date'])
+                #df['date'] = pd.to_datetime(df['date'])
 
                 df['account_id'] = account.id
                 df.drop(['tid', 'closing_balance'], axis=1, inplace=True)
@@ -334,7 +358,7 @@ def upload_csv(name):
                     df_from_json = df_
 
                 current_app.logger.info('Converting dataframe to sql records and inserting')
-                print df_from_json.head()
+
                 try:
                     #engine = create_engine('mysql+mysqldb://mm_admin:mm_8_9435@localhost/money_db')
                     #engine=create_engine('mysql+mysqldb://'+os.environ['RDS_USERNAME']+":"+os.environ['RDS_PASSWORD']+ \
@@ -342,7 +366,7 @@ def upload_csv(name):
                     #current_app.logger.info(df_from_csv['type_id'].unique())
 
                     df_from_json.to_sql(name='transaction', con=db.engine, index=False, if_exists='append')
-
+                    #print df_from_json.sort_values('date', ascending=False).head(20)
                 except exc.SQLAlchemyError as e:
                     current_app.logger.error(e)
 
@@ -439,6 +463,7 @@ def data(name):
     df = df.sort_values(by='date', ascending=False)
 
     df['closing_balance'] = df.amount.cumsum() + account.balance
+
     return df.to_json(orient='records', date_format='iso')
 
 @main.route('/accounts/<string:name>/delete_data/', methods=['GET', 'POST'])

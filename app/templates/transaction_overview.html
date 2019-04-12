@@ -151,7 +151,7 @@
 
     });
 
-    $("#upcoming_ttable").tabulator("setData", JSON.parse('{{ dataframe | safe}}'));
+    $("#upcoming_ttable").tabulator("setData", "{{ url_for('main.get_scheduled_transactions', name=account.name) }}");
 
     $("#ttable").tabulator({
       height:"100%",
@@ -178,8 +178,8 @@
 
 	  var tt = '';
 	 	try{
-				tt = JSON.parse('{{ table | safe}}');
-				$("#ttable").tabulator("setData", JSON.parse('{{ table | safe}}'));
+				//tt = JSON.parse("{{ table | safe}}");
+				$("#ttable").tabulator("setData", "{{ url_for('main.get_latest_transactions', name=account.name) }}" );
 		}
 		catch(err){
 			console.log(err.message);
