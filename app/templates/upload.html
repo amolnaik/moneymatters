@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 
+{% block all_accounts %}
+  <a class="popover-link" href="{{ url_for('main.account_overview') }}">Your Accounts</a>
+{% endblock %}
 
 {% block logger %}
 <a class="popover-link" href="{{ url_for('main.account', name=account.name) }}">Logger</a>
@@ -14,23 +17,29 @@
 {% endblock %}
 
 {% block body %}
+<div class="container">
 
-<section class="header">
-  <h2 class="title"> File Upload </h2>
-  <div class="row">
-    <div class="three columns value-prop"></div>
-  </div>
-  <div class="row">
-    <form method=post enctype=multipart/form-data>
-      <input type=file name=file>
-      <input class="button-primary" type="submit" value="Upload">
-    </form>
-  </div>
-  <div class="row">
-    <div class="u-full-width">
-      {{ table|safe }}
+    <section class="header">
+      <h2 class="title"> Upload Transactions</h2>
+    </section>
+
+    <div class="docs-section">
+      <div class="row">
+        <form method=post enctype=multipart/form-data>
+          <input type=file name=file>
+          <input class="button-primary" type="submit" value="Upload">
+        </form>
+      </div>
     </div>
-  </div>
-</section>
+
+    <div class="docs-section">
+      <div class="row">
+        <div class="u-full-width">
+          {{ table|safe }}
+        </div>
+      </div>
+    </div>
+
+</div>
 
 {% endblock %}
