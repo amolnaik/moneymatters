@@ -8,6 +8,7 @@ BASEDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 def create_sqlite_uri(db_name):
+    #print 'sqlite:///' + os.path.join(BASEDIR, db_name)
     return 'sqlite:///' + os.path.join(BASEDIR, db_name)
 
 def create_mysql_uri(rds_username, rds_password, rds_hostname, rds_port, rds_db_name):
