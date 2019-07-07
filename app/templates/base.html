@@ -6,19 +6,17 @@
   <title>Money</title>
   <meta name="description" content="Manage Money, Smarter!">
   <meta name="author" content="Amol Naik">
-  <!--meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"-->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   <link href='https://fonts.googleapis.com/css?family=Raleway:400,300,600' rel='stylesheet' type='text/css'>
-
-  <link rel="stylesheet" type='text/css' href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css">
-  <link rel="stylesheet" type='text/css' href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.css">
+  <link rel="stylesheet" type='text/css' href="https://cdnjs.cloudflare.com/ajax/libs/normalize/3.0.2/normalize.min.css">
+  <link rel="stylesheet" type='text/css' href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
 
   {% block css %}{% endblock %}
-  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
   <script type="text/javascript" src="{{ url_for('static', filename='js/site.js') }}"></script>
   {% block js %}{% endblock %}
-
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}" />
 
 </head>
@@ -46,7 +44,7 @@
                       {% block edit_account %}{% endblock %}
                   </li>
                   <li class="popover-item">
-                      {% block all_accounts %}{% endblock %}
+                    <a class="popover-link" href="{{ url_for('main.account_overview') }}">Your Accounts</a>
                   </li>
                   <li class="popover-item">
                     {% block dashboard %}{% endblock %}
@@ -65,9 +63,6 @@
                   </li>
                   <li class="popover-item">
                     {% block download %}{% endblock %}
-                  </li>
-                  <li class="popover-item">
-                    {% block settings %}{% endblock %}
                   </li>
                   <li class="popover-item">
                     <a class="popover-link" href="{{ url_for('auth.logout') }}">logout</a>

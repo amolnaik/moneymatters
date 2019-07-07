@@ -20,10 +20,6 @@
 </script>
 {% endblock %}
 
-{% block all_accounts %}
-  <a class="popover-link" href="{{ url_for('main.account_overview') }}">Your Accounts</a>
-{% endblock %}
-
 {% block logger %}
 <a class="popover-link" href="{{ url_for('main.account', name=account.name) }}">Logger</a>
 {% endblock %}
@@ -38,106 +34,95 @@
 {% endblock %}
 
 {% block body %}
-<div class="container">
+<section class="header">
+  <h2 class="title">Scheduled Transactions</h2>
+  <h6 class="docs-header transaction-overview">Create New Scheduled Transaction</h6>
+  <div id = "transactionform" class="row">
+    {% for field in form.errors %}
+      {% for error in form.errors[field] %}
+          <div class="alert alert-error">
+              <strong>{{field }}</strong> {{error}}.
+          </div>
+      {% endfor %}
+    {% endfor %}
+    <form action="{{ url_for('main.new_scheduled_transaction', name=account.name) }}" method="post">
+      {{ form.hidden_tag() }}
+        <div class="row">
+          <div class="six columns">
+            <div class="row">
+              <div class="six columns">
+                {{ form.frequency(class_="u-full-width", placeholder="Frequency") }}
+              </div>
+              <div class="three columns">
+                {{ form.interval(class_="u-full-width", placeholder="Interval") }}
+              </div>
+              <div class="three columns">
+                {{ form.day(class_="u-full-width", placeholder="Day") }}
+              </div>
+            </div>
+          </div>
+          <div class="six columns">
+            <div class="row">
+                {{ form.start(class_='dtpick') }}
+                {{ form.end(class_='dtpick') }}
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="six columns">
+            <div class="row">
+              <div class="six columns">
+                {{ form.amount(class_="u-full-width", placeholder="amount", value="") }}
+              </div>
+							<div class="six columns">
+								 {{ form.category(class_="u-full-width", placeholder="category", value="") }}
+							</div>
+            </div>
+            <div class="row">
+                <div class="six columns">
+                  {{ form.subcategory(class_="u-full-width", placeholder="subcategory", value="") }}
+                </div>
+                <div class="six columns">
+									{{ form.type(class_="u-full-width", placeholder="type", value="") }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="six columns">
+                  {{ form.tag(class_="u-full-width", placeholder="tag", value="") }}
+                </div>
+                <div class="six columns">
+                  {{ form.payee(class_="u-full-width", placeholder="payee", value="") }}
+                </div>
+            </div>
+            			{{ form.description(class_="u-full-width", placeholder="description", value="") }}
+            <div class="row">
+                <div class="six columns">
+                  <span class="label-body">Activate</span>
+                  {{ form.active()}}
+                </div>
+                <div class="six columns">
+                  {{ form.submit(class="button button-primary", value="Schedule") }}
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
 
-	<section class="header">
-  	<h2 class="title">Templates</h2>
-	</section>
+    <h6 class="docs-header transaction-overview">All Your Scheduled Transactions</h6>
 
-		<div class="docs-section">
+    <div class="u-full-width">
+      <table class="u-full-width">
+        <div id="st-table"></div>
+      </table>
+    </div>
 
-	  	<h5>Create New Scheduled Transaction</h5>
-
-	  	<div id = "template-form" class="row">
-		    {% for field in form.errors %}
-		      {% for error in form.errors[field] %}
-		          <div class="alert alert-error">
-		              <strong>{{field }}</strong> {{error}}.
-		          </div>
-		      {% endfor %}
-		    {% endfor %}
-		    <form action="{{ url_for('main.new_scheduled_transaction', name=account.name) }}" method="post">
-		      	{{ form.hidden_tag() }}
-		        <div class="row">
-		          <div class="six columns">
-		            <div class="row">
-		              <div class="six columns">
-		                {{ form.frequency(class_="u-full-width", placeholder="Frequency") }}
-		              </div>
-		              <div class="three columns">
-		                {{ form.interval(class_="u-full-width", placeholder="Interval") }}
-		              </div>
-		              <div class="three columns">
-		                {{ form.day(class_="u-full-width", placeholder="Day") }}
-		              </div>
-		            </div>
-		          </div>
-		          <div class="six columns">
-		            <div class="row">
-		                {{ form.start(class_='dtpick') }}
-		                {{ form.end(class_='dtpick') }}
-		            </div>
-		          </div>
-		        </div>
-		        <div class="row">
-		          <div class="six columns">
-		            <div class="row">
-		              <div class="six columns">
-		                {{ form.amount(class_="u-full-width", placeholder="amount", value="") }}
-		              </div>
-									<div class="six columns">
-										 {{ form.category(class_="u-full-width", placeholder="category", value="") }}
-									</div>
-		            </div>
-		            <div class="row">
-		                <div class="six columns">
-		                  {{ form.subcategory(class_="u-full-width", placeholder="subcategory", value="") }}
-		                </div>
-		                <div class="six columns">
-											{{ form.type(class_="u-full-width", placeholder="type", value="") }}
-		                </div>
-		            </div>
-		            <div class="row">
-		                <div class="six columns">
-		                  {{ form.tag(class_="u-full-width", placeholder="tag", value="") }}
-		                </div>
-		                <div class="six columns">
-		                  {{ form.payee(class_="u-full-width", placeholder="payee", value="") }}
-		                </div>
-		            </div>
-		            	{{ form.description(class_="u-full-width", placeholder="description", value="") }}
-		            <div class="row">
-		                <div class="six columns">
-		                  <span class="label-body">Activate</span>
-		                  {{ form.active()}}
-		                </div>
-		                <div class="six columns">
-		                  {{ form.submit(class="button button-primary", value="Schedule") }}
-		                </div>
-		            </div>
-		          </div>
-		        </div>
-				</form>
-	    </div>
-
-		</div>
-
-		<div class="docs-section">
-				<h5>All Your Scheduled Transactions</h5>
-				<div class="u-full-width">
-		      <table class="u-full-width">
-		        <div id="st-table"></div>
-		      </table>
-		    </div>
-		</div>
-
-	</div>
 
   <script>
 
     $("#st-table").tabulator({
       height:"100%",
-
+      layout:"fitColumns",
       tooltips:false,
       placeholder:"No Data Set",
       pagination:"local",
@@ -148,7 +133,7 @@
               return moment(cell.getValue()).format("DD/MM/YYYY"); //return the contents of the cell;
           },},
           {title:"Frequency", field:"frequency", editor: 'input'},
-          //{title:"Interval", field:"interval", editor:'number'},
+          {title:"Interval", field:"interval", editor:'number'},
           {title:"Day", field:"day", editor:'number'},
           {title:"Start", field:"start", editor:'input', formatter:function(cell, formatterParams){
               return moment(cell.getValue()).format("DD/MM/YYYY"); //return the contents of the cell;
@@ -200,4 +185,5 @@
   console.log(JSON.parse('{{ data | safe}}'))
   </script>
 
+</section>
 {% endblock %}

@@ -9,32 +9,17 @@
 			  integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
 			  crossorigin="anonymous"></script>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/tabulator_modern.css') }}">
-
 <!--link href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/3.5.1/css/tabulator_simple.min.css" rel="stylesheet"-->
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/3.5.1/js/tabulator.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.21.0/moment.min.js" type="text/javascript"></script>
-
-<script src="https://code.highcharts.com/highcharts.js"></script>
-
-
-
 <script>
   $(function() {
-    $( ".dtpick" ).datepicker({ dateFormat: 'dd/mm/yy'}).datepicker("setDate", "0"); }).blur();
-
-		$(document).ready(function(){
-			$(this).scrollTop(0);
-			toggle_bullets();
-		});
+    $( ".dtpick" ).datepicker({ dateFormat: 'dd/mm/yy'}).datepicker("setDate", "0"); });
 </script>
 {% endblock %}
 
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/table.css') }}">
-{% endblock %}
-
-{% block all_accounts %}
-  <a class="popover-link" href="{{ url_for('main.account_overview') }}">Your Accounts</a>
 {% endblock %}
 
 {% block dashboard %}
@@ -53,165 +38,68 @@
 <a class="popover-link" href="{{ url_for('main.new_scheduled_transaction', name=account.name) }}">Templates</a>
 {% endblock %}
 
-{% block settings %}
-<a class="popover-link" href="{{ url_for('settings.show_account_settings', name=account.name) }}">Go To Settings</a>
-{% endblock %}
-
 {% block body %}
-<div class="container">
+<section class="header">
+  <h2 class="title">Transaction Overview</h2>
+  <div id = "transactionform" class="row">
+	    {% for field in form.errors %}
+	      {% for error in form.errors[field] %}
+	          <div class="alert alert-error">
+	              <strong>{{field }}</strong> {{error}}.
+	          </div>
+	      {% endfor %}
+	    {% endfor %}
 
-		<section class="header">
-  		<h2 class="title">Logger</h2>
-		</section>
-
-		<div class="docs-section">
-
-			<!--div class="row">
-				<div class="six columns">
-						<div class="tabs">
-						  <div class="tab-2">
-						    <label for="tab_for_total">Total</label>
-						    <input id="tab_for_total" name="tabs-two" type="radio" checked="checked" onClick="toggle_bullets()">
-						  </div>
-						  <div class="tab-2">
-						    <label for="tab_for_split">Split</label>
-						    <input id="tab_for_split" name="tabs-two" type="radio" onClick="toggle_bullets()">
-						  </div>
-						</div>
-				</div>
-			</div-->
-
-			<div class="row">
-				  <div class="six columns">
-						<div id="container1" style="width:100%; height:300px; display:block"></div>
-						<div id="container2" style="width:100%; height:300px; display:none"></div>
-					</div>
-					<div class="six columns">
-						<h5>New Transaction</h5>
-						<div id = "transactionform">
-							{% for field in form.errors %}
-								{% for error in form.errors[field] %}
-										<div class="alert alert-error">
-												<strong>{{field }}</strong> {{error}}.
-										</div>
-								{% endfor %}
-							{% endfor %}
-
-							<form action="{{ url_for('main.account', name=account.name) }}" method="post">
-									{{ form.hidden_tag() }}
-								<div class="row">
-									<div class="six columns">
-											{{ form.date(class_='dtpick',placeholder="date") }}
-									</div>
-									<div class="six columns">
-											{{ form.amount(class_="u-full-width", placeholder="amount", value="") }}
-									</div>
-								</div>
-								<div class="row">
-									<div class="six columns">
-											{{ form.category(class_="u-full-width",placeholder="category", value="") }}
-									</div>
-									<div class="six columns">
-
-											{{ form.subcategory(class_="u-full-width", placeholder="subcategory", value="") }}
-									</div>
-								</div>
-								<div class="row">
-									<div class="six columns">
-											{{ form.tag(class_="u-full-width", placeholder="tag", value="") }}
-									</div>
-									<div class="six columns">
-											{{ form.description(class_="u-full-width", placeholder="description", value="") }}
-									</div>
-								</div>
-								<div class="row">
-									<div class="six columns">
-											{{ form.type(class_="u-full-width",placeholder="type") }}
-									</div>
-									<div class="six columns">
-											{{ form.payee(class_="u-full-width", placeholder="payee", value="") }}
-									</div>
-								</div>
-								<div class="row">
-									<div class="six columns">
-										<label class="status">
-										 {{ form.status() }}
-										 <span class="label-body"> Completed</span>
-										</label>
-									</div>
-									<div class="six columns">
-											{{ form.submit(class="button-primary u-full-width", value="Add") }}
-									</div>
-								</div>
-							</form>
-						</div>
-	        </div>
-			</div>
-		</div>
-
-		<!--div class="docs-section">
+    	<form action="{{ url_for('main.account', name=account.name) }}" method="post">
+					{{ form.hidden_tag() }}
 				<div class="row">
-						<h5>New Transaction</h5>
-						<div id = "transactionform">
-							{% for field in form.errors %}
-								{% for error in form.errors[field] %}
-										<div class="alert alert-error">
-												<strong>{{field }}</strong> {{error}}.
-										</div>
-								{% endfor %}
-							{% endfor %}
+			    <div class="three columns">
+			      	{{ form.date(class_='dtpick u-full-width',placeholder="date") }}
+			    </div>
+			    <div class="three columns">
+			    		{{ form.amount(class_="u-full-width", placeholder="amount", value="") }}
+							{{ form.subcategory(class_="u-full-width", placeholder="subcategory", value="") }}
+							{{ form.description(class_="u-full-width", placeholder="description", value="") }}
+			    </div>
+					<div class="three columns">
+							{{ form.type(class_="u-full-width",placeholder="type") }}
+							{{ form.payee(class_="u-full-width", placeholder="payee", value="") }}
+							<label class="status">
+							 {{ form.status() }}
+							 <span class="label-body">Transaction completed</span>
+						 	</label>
+					</div>
+					<div class="three columns">
+							{{ form.category(class_="u-full-width",placeholder="category", value="") }}
+							{{ form.tag(class_="u-full-width", placeholder="tag", value="") }}
+							{{ form.submit(class="button-primary u-full-width", value="Add") }}
+					</div>
+  			</div>
+			</form>
 
-							<form action="{{ url_for('main.account', name=account.name) }}" method="post">
-									{{ form.hidden_tag() }}
-								<div class="row">
-									<div class="three columns">
-											{{ form.date(class_='dtpick u-full-width',placeholder="date") }}
-									</div>
-									<div class="three columns">
-											{{ form.amount(class_="u-full-width", placeholder="amount", value="") }}
-											{{ form.subcategory(class_="u-full-width", placeholder="subcategory", value="") }}
-											{{ form.description(class_="u-full-width", placeholder="description", value="") }}
-									</div>
-									<div class="three columns">
-											{{ form.type(class_="u-full-width",placeholder="type") }}
-											{{ form.payee(class_="u-full-width", placeholder="payee", value="") }}
-											<label class="status">
-											 {{ form.status() }}
-											 <span class="label-body"> Completed</span>
-											</label>
-									</div>
-									<div class="three columns">
-											{{ form.category(class_="u-full-width",placeholder="category", value="") }}
-											{{ form.tag(class_="u-full-width", placeholder="tag", value="") }}
-											{{ form.submit(class="button-primary u-full-width", value="Add") }}
-									</div>
-								</div>
-							</form>
-						</div>
-				</div>
-		</div-->
+  	</div>
 
-		<div class="docs-section">
-		  <div class="u-full-width">
-		    <h5>Upcoming Transactions</h5>
-	      <table class="u-full-width">
-	        <div id="upcoming_ttable"></div>
-	      </table>
-		  </div>
-		</div>
 
-		<div class="docs-section">
-			<div class="u-full-width">
-		    <h5>Last Transactions</h5>
-	      <table class="u-full-width">
-	        <div id="ttable"></div>
-	      </table>
-		  </div>
-		</div>
+  <div class="u-full-width">
+    <h2 class="docs-header transaction-overview"> Upcoming Transactions</h2>
 
-</div>
+      <table class="u-full-width">
+        <div id="upcoming_ttable"></div>
+      </table>
 
-<script>
+  </div>
+
+	<div class="u-full-width">
+    <h2 class="docs-header transaction-overview"> Last Transactions</h2>
+
+      <table class="u-full-width">
+        <div id="ttable"></div>
+      </table>
+
+  </div>
+
+
+  <script>
 
     $("#upcoming_ttable").tabulator({
       height:"100%",
@@ -246,10 +134,10 @@
 	         //This callback is called any time a cell is edidted
 	 				console.log(JSON.stringify(cell.getData()))
 	 				//var test = { "name":"John", "age":30, "city":"New York"};
-	 				//var test = cell.getData();
+	 				var test = cell.getData();
 					$.ajax({
 	 	            url: '{{ url_for('main.show_template_transactions', name=account.name) }}',
-	 		          data: JSON.stringify(cell.getData()),
+	 		          data: JSON.stringify(test),
 	 	            type: 'POST',
 	 							contentType: 'application/json;charset=UTF-8',
 	 	            success: function(response) {
@@ -281,332 +169,24 @@
         {title:"Category", field:"category"},
 				{title:"Subcategory", field:"subcategory"},
         {title:"Description", field:"description"},
-        //{title:"Payee", field:"payee"},
-        {title:"Status", field:"status", formatter:"tickCross"},
+        {title:"Payee", field:"payee"},
+        {title:"Status", field:"status"},
         {title:"Tag", field:"tag"},
-        //{title:"Type", field:"type"}, // ToDo: pre-selected strings
+        {title:"Type", field:"type"}, // ToDo: pre-selected strings
       ],
   });
 
+	  var tt = '';
 	 	try{
+				//tt = JSON.parse("{{ table | safe}}");
 				$("#ttable").tabulator("setData", "{{ url_for('main.get_latest_transactions', name=account.name) }}" );
 		}
 		catch(err){
 			console.log(err.message);
 		}
 
-		// toggle to see target on last recorded tag, category and sub-category
-		function toggle_bullets() {
-
-			var r = null;
-			$.getJSON("{{ url_for('settings.get_data_for_bullets', name=account.name) }}",
-					function(data) {
-
-						r = data['expense'];
-						t = data['tag'];
-						c = data['category'];
-						s = data['subcategory'];
-
-						// get states of tabs
-						var x = document.getElementById("container1");
-						var y = document.getElementById("container2");
-
-						toggle_total = true;
-						//var toggle_total = document.getElementById('tab_for_total').checked;
-					  //var toggle_split = document.getElementById('tab_for_split').checked;
-
-						if (toggle_total){
-
-						 //document.getElementById('tab_for_split').checked = false;
-						 //x.style.display = "none";
-						 //y.style.display="block";
-						 plot_pie_chart(r, t, c, s);
-
-						 }
-						else {
-
-							 //document.getElementById('tab_for_split').checked = true;
-							 //x.style.display = "none";
-							 //y.style.display="block";
-							 plot_bar_chart(t,c,s);
-
-				 	 		}
-
-					});
-			};
-
-		function plot_pie_chart(data, t, c, s){
-
-				var chart1 = new Highcharts.Chart({
-					chart: {
-							type: 'pie',
-							renderTo: 'container1'
-					},
-					legend: {
-	            enabled: false
-	        },
-					title: {
-					    verticalAlign: 'middle',
-							text: 'Spent'
-					},
-					credits: {
-				    enabled: false
-				  },
-					plotOptions: {
-							pie: {
-									animation: {
-											duration: 750,
-											easing: 'easeOutQuad'
-									},
-									allowPointSelect: true,
-									//center: ['50%', '50%'],
-									cursor: 'pointer',
-									point: {
-										events: {
-
-											click: function() {
-
-											var div1 = document.getElementById('container1');
-											var div2 = document.getElementById('container2');
-
-											 if(div1.style.display == 'block') {
-										      div2.style.display = 'block';
-										      div1.style.display = 'none';
-													plot_bar_chart(data, t,c,s);
-										   }
-											 else {
-											 	console.log("display property not recognised!")
-											 }
-											}
-										}
-									},
-									allowPointSelect: true,
-									showInLegend: true,
-									dataLabels: {
-											enabled: false,
-											style: {
-													color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
-											}
-									}
-								}
-					},
-
-					tooltip: {
-							pointFormat: '{point.y:.2f}%'
-					},
-
-					series : [{
-						animation: {
-								 duration: 750,
-								 easing: 'easeOutQuad'
-						 },
-						colors:[
-								'#e7eaf6',
-								'#113f67'
-							],
-						size: '100%',
-						innerSize: '80%',
-            data: [
-										['Remaining Budget',data['budget']-data['spent']],
-										['Spent', data['spent']],
-                ]
-        		},{
-						animation: {
-								 duration: 750,
-								 easing: 'easeOutQuad'
-						 },
-						 colors:[
-								 	'#e7eaf6',
-								 '#a2a8d3',
-							 ],
-            size: '75%',
-						innerSize: '70%',
-            data: [
-								['Remaining Total', 100-data['budget']],
-								['Budget', data['budget']],
-                ]
-        		}]
-					});
-
-			};
-
-		function plot_bar_chart(data, t,c,s){
-
-				var chart2 = Highcharts.chart({
-
-					chart: {
-							type: 'pie',
-							renderTo: 'container2'
-					},
-
-					legend: {
-							enabled: false
-					},
-
-					title: {
-							verticalAlign: 'middle',
-							text: ''
-					},
-
-					credits: {
-						enabled: false
-					},
-
-					plotOptions: {
-							pie: {
-									animation: {
-											duration: 750,
-											easing: 'easeOutQuad'
-									},
-									allowPointSelect: true,
-									//center: ['50%', '50%'],
-									cursor: 'pointer',
-									point: {
-										events: {
-
-											click: function() {
-
-											var div1 = document.getElementById('container1');
-											var div2 = document.getElementById('container2');
-
-											 if(div2.style.display == 'block') {
-													div1.style.display = 'block';
-													div2.style.display = 'none';
-													plot_pie_chart(data, t,c,s);
-											 }
-											 else {
-												console.log("display property not recognised!")
-											 }
-											}
-										}
-									},
-									allowPointSelect: true,
-									showInLegend: true,
-									dataLabels: {
-											enabled: false,
-											style: {
-													color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
-											}
-									}
-								}
-					},
-
-					tooltip: {
-							pointFormat: '{point.y:.2f}% of Limit'
-					},
-
-					series : [{
-						animation: {
-								 duration: 750,
-								 easing: 'easeOutQuad'
-						 },
-						colors:[
-									'#b2d4f5',
-								 '#1866b4',
-							 ],
-						size: '100%',
-						innerSize: '80%',
-						data: [
-								['Remaining Tag', t['budget']-t['spent']],
-								[t['name'], t['spent']],
-								]
-						},
-
-					{
-						animation: {
-								 duration: 750,
-								 easing: 'easeOutQuad'
-						 },
-						colors:[
-								'#b2d4f5',
-								'#367dc4'
-							],
-						size: '75%',
-						innerSize: '70%',
-						data: [
-								['Remaining Category', c['budget']-c['spent']],
-								[c['name'], c['spent']],
-								]
-						},
-										{
-						animation: {
-								 duration: 750,
-								 easing: 'easeOutQuad'
-						 },
-						colors:[
-									'#b2d4f5',
-								 '#5899DA',
-							 ],
-						size: '45%',
-						innerSize: '50%',
-						data: [
-								['Remaining Subcategory', s['budget']-s['spent']],
-								[s['name'], s['spent']],
-								]
-						}]
-
-				});
-
-				/*
-				var chart2 =	Highcharts.chart('container2', {
-						chart: {
-							type: 'column'
-						},
-						legend: {
-								enabled: false
-						},
-						title:{
-							text: ''
-						},
-						credits: {
-							enabled: false
-						},
-						xAxis: {
-							categories: [t['name'], c['name'], s['name']],
-
-						},
-						yAxis: {
-							min: 0,
-							lineWidth: 0,
-							minorGridLineWidth: 0,
-							gridLineColor: 'transparent',
-							lineColor: 'transparent',
-							 labels: {
-									 enabled: false
-							 },
-							 minorTickLength: 0,
-							 tickLength: 0,
-							title: {
-								text: ''
-							}
-						},
-						tooltip: {
-							pointFormat: '<span style="color:{series.color}"> {series.name}</span>: {point.percentage:.0f}%<br/>',
-							shared: true
-						},
-						plotOptions: {
-							column: {
-								stacking: 'percent'
-							}
-						},
-						series: [{
-							pointWidth: 25,
-							name: 'Remaining',
-							data: [t['budget']-t['spent'],
-										 c['budget']-c['spent'],
-										 s['budget']-s['spent']],
-							color: "#a2a8d3"
-						}, {
-							pointWidth: 25,
-							name: 'Spent',
-							data: [t['spent'], c['spent'], s['spent']],
-							color: "#38598b"
-						}]
-					});
-				*/
-
-			};
 
 	</script>
 
+</section>
 {% endblock %}
