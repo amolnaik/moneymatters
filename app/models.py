@@ -18,11 +18,6 @@ EMAIL_REGEX = re.compile(r'^\S+@\S+\.\S+$')
 USERNAME_REGEX = re.compile(r'^\S+$')
 
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
-
 def check_length(attribute, length):
     """Checks the attribute's length."""
     return bool(attribute) and len(attribute) <= length
@@ -49,7 +44,6 @@ class BaseModel:
     @classmethod
     def from_dict(cls, model_dict):
         return cls(**model_dict).save()
-
 
 class User(UserMixin, db.Model, BaseModel):
 
@@ -138,6 +132,11 @@ class User(UserMixin, db.Model, BaseModel):
         return self.save()
 
 
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
 class Account(db.Model, BaseModel):
 
     __tablename__ = 'account'
@@ -157,14 +156,6 @@ class Account(db.Model, BaseModel):
     # one account can have many scheduled transactions
     scheduled_transactions = db.relationship('ScheduledTransaction',
                                              backref='account', lazy='dynamic')
-
-    # one account can have many category types
-    #category_types = db.relationship('CategoryType', backref='account',
-    #                             lazy='dynamic')
-
-    # one account can have many category types
-    #subcategory_types = db.relationship('SubCategoryType', backref='account',
-    #                                lazy='dynamic')
 
     def __init__(self, name=None, number=None, currency=None,
         balance=None, holder=None):
@@ -229,12 +220,12 @@ class Account(db.Model, BaseModel):
 
     def to_dict(self):
         return {
-            'name': self.name,
-            'number': self.number,
-            'currency': self.currency,
-            'balance': self.balance,
-            'holder': self.holder,
-            'created_on': self.created_on,
+            'name' : self.name,
+            'number' : self.number,
+            'currency' : self.currency,
+            'balance' : self.balance,
+            'holder' : self.holder,
+            'created_on' : self.created_on,
         }
 
     # additional operations/methods to follow...
@@ -259,35 +250,31 @@ class Account(db.Model, BaseModel):
             cb = db.session.query(func.sum(Transaction.amount)) \
                     .filter(Transaction.status == True, Transaction.account_id == id).scalar()
 
-            if cb is None:
+            if cb == None:
                 return self._balance
             else:
                 return cb + self._balance
-
 
 class TransactionType(db.Model, BaseModel):
 
     __tablename__ = 'transactiontype'
 
-    id = db.Column(db.Integer, primary_key=True, nullable=True)
+    id = db.Column(db.Integer, primary_key=True,nullable=True)
     ttype = db.Column('ttype', db.String(128))
-
 
 class CategoryType(db.Model, BaseModel):
 
     __tablename__ = 'categorytype'
 
-    id = db.Column(db.Integer, primary_key=True, nullable=True)
+    id = db.Column(db.Integer, primary_key=True,nullable=True)
     cattype = db.Column('cattype', db.String(128))
-
 
 class SubCategoryType(db.Model, BaseModel):
 
     __tablename__ = 'subcategorytype'
 
-    id = db.Column(db.Integer, primary_key=True, nullable=True)
+    id = db.Column(db.Integer, primary_key=True,nullable=True)
     subcattype = db.Column('subcattype', db.String(128))
-
 
 class ScheduledTransaction(db.Model, BaseModel):
 
@@ -310,7 +297,7 @@ class ScheduledTransaction(db.Model, BaseModel):
     #transaction fields as template
     _amount = db.Column('amount', db.Float)
     _description = db.Column('description', db.String(128))
-    _type = db.Column('type', db.String(128))
+    _type  = db.Column('type', db.String(128))
     _category = db.Column('category', db.String(128))
     _subcategory = db.Column('subcategory', db.String(128))
     _tag = db.Column('tag', db.String(64))
@@ -716,232 +703,4 @@ class Transaction(db.Model, BaseModel):
             'tag': self.tag,
             'status': self.status,
             'payee': self._payee,
-        }
-
-
-class CategorySettings(db.Model, BaseModel):
-
-    __tablename__ = 'category_settings'
-    __table_args__ = (UniqueConstraint('category', name='unique_categoryname'),)
-
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    account_id = db.Column(db.Integer, db.ForeignKey('account.id'))
-    _category = db.Column('category', db.String(128), nullable=True)
-    _limit = db.Column('limit', db.Float, nullable=False)
-    _last_month = db.Column('last_month', db.Float, default=0)
-    _avg_month = db.Column('avg_month', db.Float, default=0)
-    _unit = db.Column('unit', db.String(128), nullable=True)
-    _apply = db.Column('apply', db.Boolean)
-
-    def __init__(self, accountid, category=None, limit=None,
-                unit=None,apply=None):
-
-        self.account_id = accountid
-        self.category = category
-        self.limit = limit
-        self.unit = unit
-        self.apply=apply
-
-    @property
-    def category(self):
-        return self._category
-
-    @category.setter
-    def category(self, category):
-        if not check_length(category, 128):
-            self._category = 'not provided'
-        else:
-            self._category = category
-
-    category = synonym('_category', descriptor=category)
-
-    @property
-    def limit(self):
-        return self._limit
-
-    @limit.setter
-    def limit(self, limit):
-        if not isinstance(limit, numbers.Number):
-            self._limit = 123
-        else:
-            self._limit = limit
-
-    limit = synonym('_limit', descriptor=limit)
-
-    @property
-    def last_month(self):
-        return self._last_month
-
-    @last_month.setter
-    def last_month(self, last_month):
-        if not isinstance(last_month, numbers.Number):
-            self._last_month = 0.00
-        else:
-            self._last_month = last_month
-
-    last_month = synonym('_last_month', descriptor=last_month)
-
-    @property
-    def avg_month(self):
-        return self._avg_month
-
-    @avg_month.setter
-    def avg_month(self, avg_month):
-        if not isinstance(avg_month, numbers.Number):
-            self._avg_month= 0.00
-        else:
-            self._avg_month = avg_month
-
-    avg_month = synonym('_avg_month', descriptor=avg_month)
-
-    @property
-    def unit(self):
-        return self._unit
-
-    @unit.setter
-    def unit(self, unit):
-        if not check_length(unit, 128):
-            self._unit = 'not provided'
-        else:
-            self._unit = unit
-
-    unit = synonym('_unit', descriptor=unit)
-
-    @property
-    def apply(self):
-        return bool(self._apply)
-
-    @apply.setter
-    def apply(self, apply):
-        if not (isinstance(apply, bool)):
-            self._apply = False
-        else:
-            self._apply = apply
-
-    apply = synonym('_apply', descriptor=apply)
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'account_id': self.account_id,
-            'category': self.category,
-            'limit': self.limit,
-            'last_month': self.last_month,
-            'avg_month': self.avg_month,
-            'unit': self.unit,
-            'apply': self.apply
-        }
-
-
-class SubCategorySettings(db.Model, BaseModel):
-
-    __tablename__ = 'subcategory_settings'
-    __table_args__ = (UniqueConstraint('subcategory', name='unique_subcategoryname'),)
-
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    account_id = db.Column(db.Integer, db.ForeignKey('account.id'))
-    _subcategory = db.Column('subcategory', db.String(128), nullable=True)
-    _limit = db.Column('limit', db.Float, nullable=False)
-    _last_month = db.Column('last_month', db.Float, default=0)
-    _avg_month = db.Column('avg_month', db.Float, default=0)
-    _unit = db.Column('unit', db.String(128), nullable=True)
-    _apply = db.Column('apply', db.Boolean)
-
-    def __init__(self, accountid, subcategory=None, limit=None,
-                unit=None,apply=None):
-
-        self.account_id = accountid
-        self.subcategory = subcategory
-        self.limit = limit
-        self.unit = unit
-        self.apply=apply
-
-    @property
-    def subcategory(self):
-        return self._subcategory
-
-    @subcategory.setter
-    def subcategory(self, subcategory):
-        if not check_length(subcategory, 128):
-            self._subcategory = 'not provided'
-        else:
-            self._subcategory = subcategory
-
-    subcategory = synonym('_subcategory', descriptor=subcategory)
-
-    @property
-    def limit(self):
-        return self._limit
-
-    @limit.setter
-    def limit(self, limit):
-        if not isinstance(limit, numbers.Number):
-            self._limit = 123
-        else:
-            self._limit = limit
-
-    limit = synonym('_limit', descriptor=limit)
-
-    @property
-    def last_month(self):
-        return self._last_month
-
-    @last_month.setter
-    def last_month(self, last_month):
-        if not isinstance(last_month, numbers.Number):
-            self._last_month = 0.00
-        else:
-            self._last_month = last_month
-
-    last_month = synonym('_last_month', descriptor=last_month)
-
-    @property
-    def avg_month(self):
-        return self._avg_month
-
-    @avg_month.setter
-    def avg_month(self, avg_month):
-        if not isinstance(avg_month, numbers.Number):
-            self._avg_month= 0.00
-        else:
-            self._avg_month = avg_month
-
-    avg_month = synonym('_avg_month', descriptor=avg_month)
-
-    @property
-    def unit(self):
-        return self._unit
-
-    @unit.setter
-    def unit(self, unit):
-        if not check_length(unit, 128):
-            self._unit = 'not provided'
-        else:
-            self._unit = unit
-
-    unit = synonym('_unit', descriptor=unit)
-
-    @property
-    def apply(self):
-        return bool(self._apply)
-
-    @apply.setter
-    def apply(self, apply):
-        if not (isinstance(apply, bool)):
-            self._apply = False
-        else:
-            self._apply = apply
-
-    apply = synonym('_apply', descriptor=apply)
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'account_id': self.account_id,
-            'subcategory': self.subcategory,
-            'limit': self.limit,
-            'last_month': self.last_month,
-            'avg_month': self.avg_month,
-            'unit': self.unit,
-            'apply': self.apply
         }

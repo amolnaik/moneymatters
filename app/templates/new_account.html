@@ -5,55 +5,27 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/table.css') }}">
 {% endblock %}
 
-{% block all_accounts %}
-  <a class="popover-link" href="{{ url_for('main.account_overview') }}">Your Accounts</a>
-{% endblock %}
-
 
 {% block body %}
-
-  <div class="container">
-
-    <section class="header">
-      <h2 class="title">Open New Account</h2>
-    </section>
-    
-    <div class="docs-section" id="account-creation-form">
-      <h5>Create New Account</h5>
-      <div class="row">
-        {% for field in form.errors %}
-         {% for error in form.errors[field] %}
-         <div class="alert alert-error">
-             <strong>{{field }}</strong> {{error}}.
-         </div>
-         {% endfor %}
-       {% endfor %}
-        <form action="{{ url_for('main.new_account') }}" method=post>
-          {{ form.hidden_tag() }}
-          <div class="row">
-            <div class="six columns">
-              <label for="account-name">Account Name</label>
-              {{ form.name(class_="u-full-width", placeholder="account", maxlength=128) }}
-            </div>
-            <div class="six columns">
-              <label for="account-number">Account Number</label>
-              {{ form.number(class_="u-full-width", placeholder="number") }}
-            </div>
-          </div>
-          <div class="row">
-            <div class="six columns">
-              <label for="account-currency">Currency</label>
-              {{ form.currency(class_="u-full-width", placeholder="currency", maxlength=128) }}
-            </div>
-            <div class="six columns">
-              <label for="account-balance">Balance</label>
-              {{ form.balance(class_="u-full-width", placeholder="balance") }}
-            </div>
-          </div>
-          {{ form.submit(class="button button-primary", value="Start one now") }}
-        </form>
-      </div>
+<section class="header">
+  <h2 class="title">Open New Account</h2>
+  <div class="row">
+    <div class="three columns value-prop"></div>
+    <div class="six columns">
+      {% if form.errors %}
+        <div class="has-error"><strong>Error!</strong></div>
+      {% endif %}
+      <form action="{{ url_for('main.new_account') }}" method=post>
+        {{ form.hidden_tag() }}
+        <dl>
+          <dd>{{ form.name(class_="u-full-width", placeholder="account", maxlength=128) }}
+          <dd>{{ form.number(class_="u-full-width", placeholder="number") }}
+          <dd>{{ form.currency(class_="u-full-width", placeholder="currency", maxlength=128) }}
+          <dd>{{ form.balance(class_="u-full-width", placeholder="balance") }}
+          <dt>{{ form.submit(class="button button-primary", value="Start one now") }}
+        </dl>
+      </form>
     </div>
-
-  </div>
+</div>
+</section>
 {% endblock %}
