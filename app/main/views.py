@@ -7,8 +7,9 @@ import os
 from werkzeug.utils import secure_filename
 from app.main import main
 from app.main.forms import AccountForm, TransactionForm, ScheduledTransactionForm, FilterTransactionForm
-from app.models import Account, Transaction, ScheduledTransaction
+from app.models import Account, Transaction, ScheduledTransaction, CategorySettings
 from app.models import TransactionType, CategoryType, SubCategoryType
+from app.models import CategorySettings, SubCategorySettings
 import json
 import pandas as pd
 import numpy as np
@@ -65,10 +66,19 @@ def new_account():
                               balance=form.balance.data,
                               holder=_get_user())
             new_account.save()
+            # create account settings from default categories
+            categories = [c.cattype for c in CategoryType.query.all()]
+
+            for c in categories:
+                set = CategorySettings(accountid=new_account.id,
+                category=c,
+                limit=100,
+                unit=new_account.currency)
+                # set default category limits
+                set.save()
             return redirect(url_for('main.account_overview'))
 
     return render_template('new_account.html', form=form)
-
 
 @main.route('/accounts/edit/<int:id>/', methods=['GET','POST'])
 @login_required
@@ -104,11 +114,22 @@ def account(name):
     ttypechoices = [(ttp.id, ttp.ttype) for ttp
     in TransactionType.query.order_by(TransactionType.ttype).all()]
 
-    catchoices = [(cat.id, cat.cattype) for cat
-    in CategoryType.query.order_by(CategoryType.cattype).all()]
 
-    subcatchoices = [(subcat.id, subcat.subcattype) for subcat
-    in SubCategoryType.query.order_by(SubCategoryType.subcattype).all()]
+    catchoices = [(cat.id, cat.category) for cat
+    in CategorySettings.query.filter_by(account_id = account.id).all()]
+
+    # user has not yet created any settings for categories
+    if catchoices == []:
+        catchoices = [(cat.id, cat.cattype) for cat
+        in CategoryType.query.order_by(CategoryType.cattype).all()]
+
+    subcatchoices = [(subcat.id, subcat.subcategory) for subcat
+    in SubCategorySettings.query.filter_by(account_id = account.id).all()]
+
+    # user has not yet created any settings for subcategories
+    if subcatchoices == []:
+        subcatchoices = [(subcat.id, subcat.subcattype) for subcat
+        in SubCategoryType.query.order_by(SubCategoryType.subcattype).all()]
 
 
     form = TransactionForm()
@@ -118,11 +139,16 @@ def account(name):
 
     if form.validate_on_submit() and form.submit.data:
         current_app.logger.info('Creating new transaction')
-
         try:
             ttype_name = TransactionType.query.filter_by(id=form.type.data).first().ttype
-            cattype_name = CategoryType.query.filter_by(id=form.category.data).first().cattype
-            subcattype_name = SubCategoryType.query.filter_by(id=form.subcategory.data).first().subcattype
+            #cattype_name = CategoryType.query.filter_by(id=form.category.data).first().cattype
+            cattype_name = [cattype for catid, cattype in catchoices
+                                if catid == form.category.data][0]
+
+
+            #subcattype_name = SubCategoryType.query.filter_by(id=form.subcategory.data).first().subcattype
+            subcattype_name = [subcattype for subcatid, subcattype in subcatchoices
+                                if subcatid == form.subcategory.data][0]
 
             new_transaction = Transaction(date=form.date.data,
                                       amount=form.amount.data,
@@ -135,6 +161,7 @@ def account(name):
                                       accountid=account.id,
                                       payee=form.payee.data)
             new_transaction.save()
+
             return redirect(url_for("main.account", name=name)) #check
         except:
             current_app.logger.info('Transaction form could not be completed')
@@ -144,7 +171,6 @@ def account(name):
 
     return render_template('transaction_overview.html',
                             account=account, form=form)
-
 
 @main.route('/accounts/<string:name>/scheduled_this_month/', methods=['GET'])
 @login_required
@@ -177,6 +203,7 @@ def get_scheduled_transactions(name):
                         tt_['type'].append('electronic')
                         tt_['description'].append(st.description)
                         tt_['category'].append(st.category)
+                        tt_['subcategory'].append(st.subcategory)
                         tt_['status'].append(False)
                         tt_['accountid'].append(account.id)
                         tt_['tag'].append(st.tag)
@@ -202,7 +229,6 @@ def get_scheduled_transactions(name):
         current_app.logger.info('No scheduled transactions found')
 
     return df_tt.to_json(orient='records', date_format='iso')
-
 
 @main.route('/accounts/<string:name>/latest/', methods=['GET'])
 @login_required
@@ -237,7 +263,6 @@ def get_latest_transactions(name):
         current_app.logger.info('No transactions for this month')
 
     return df_this_month.to_json(orient='records', date_format='iso')
-
 
 @main.route('/accounts/<string:name>/scheduled_transactions/', methods=['GET','POST'])
 @login_required
@@ -457,12 +482,16 @@ def data(name):
     account = Account.query.filter_by(name=name).first_or_404()
 
     transactions = [transaction.to_dict() for transaction in account.transactions]
+    #print transactions
+    try:
 
-    df = pd.DataFrame.from_dict(transactions)
-    df['date'] = pd.to_datetime(df['date'])
-    df = df.sort_values(by='date', ascending=False)
+        df = pd.DataFrame.from_dict(transactions)
+        df['date'] = pd.to_datetime(df['date'])
+        df = df.sort_values(by='date', ascending=False)
 
-    df['closing_balance'] = df.amount.cumsum() + account.balance
+        df['closing_balance'] = df.amount.cumsum() + account.balance
+    except:
+        print ("some error!s")
 
     return df.to_json(orient='records', date_format='iso')
 
@@ -488,7 +517,7 @@ def set_data(name):
         current_app.logger.info('Received request to edit data')
 
         data = json.loads(request.data)
-        print data.get('status')
+        #print data.get('status')
         t = account.transactions.filter_by(id=data.get('tid')).first()
         # ToDo: Check if the whole record needs to be updated
         t.date = datetime.strptime(data.get('date'), "%Y-%m-%dT%H:%M:%S.%fZ").date()
@@ -508,7 +537,6 @@ def set_data(name):
 
     return render_template('transaction_table.html', account=account)
 
-
 @main.route('/accounts/<string:name>/transactions/dashboard/', methods=['GET'])
 @login_required
 def show_charts(name):
@@ -517,7 +545,6 @@ def show_charts(name):
     form = FilterTransactionForm()
 
     return render_template('charts.html', account=account, form=form)
-
 
 def _get_user():
     return current_user.username if current_user.is_authenticated else None
@@ -620,7 +647,6 @@ def _get_filtered_dataframe(form, df):
 
     return df_filtered
 
-
 @main.route('/accounts/<string:name>/transactions/scheduled/', methods=['GET','POST'])
 @login_required
 def new_scheduled_transaction(name):
@@ -716,6 +742,7 @@ def edit_scheduled_transaction(name):
             current_app.logger.error('Received Post request with errors')
 
     return redirect(url_for('main.new_scheduled_transaction', name=name))
+
 
 
 @main.after_request

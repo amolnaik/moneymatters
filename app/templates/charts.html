@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+
 {% block js %}
 <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
-<script src="//code.jquery.com/jquery-1.10.2.js"></script>
+
 <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
 <script src="https://code.highcharts.com/highcharts.js"></script>
 <!-- script src="https://code.highcharts.com/modules/exporting.js"></script -->
@@ -22,6 +23,10 @@
 </script>
 {% endblock %}
 
+{% block all_accounts %}
+  <a class="popover-link" href="{{ url_for('main.account_overview') }}">Your Accounts</a>
+{% endblock %}
+
 {% block logger %}
 <a class="popover-link" href="{{ url_for('main.account', name=account.name) }}">Logger</a>
 {% endblock %}
@@ -35,52 +40,104 @@
 {% endblock %}
 
 {% block body %}
+<div class="container">
 
-<section class="header">
-  <h2 class="title"> Account Summary </h2>
-  <div class="row">
-    <div class="three columns value-prop"></div>
-  </div>
-</section>
-<div class="eight columns">
-  <fieldset>
-    <legend>Show transactions for</legend>
-    <div class="switch-toggle switch-candy switch-candy-blue">
-      <input id="all_by_year" name="view-y" type="radio">
-      <label for="all_by_year" onclick="GetChartData('y')">Years</label>
-      <input id="all_by_months" name="view-m" type="radio">
-      <label for="all_by_months" onclick="GetChartData('m')">Months</label>
-      <input id="last_12_months" name="view-12m" type="radio">
-      <label for="last_12_months" onclick="GetChartData('l12m')">Last 12 Months</label>
-      <input id="last_3_months" name="view-3m" type="radio">
-      <label for="last_3_months" onclick="GetChartData('l3m')">Last 3 Months</label>
-      <a></a>
+    <section class="header">
+      <h2 class="title">Dashboard</h2>
+    </section>
+
+    <div class="docs-section">
+        <div class="eight columns">
+          <fieldset>
+            <legend>Show transactions for</legend>
+            <div class="switch-toggle switch-candy switch-candy-blue">
+              <input id="all_by_year" name="view-y" type="radio">
+              <label for="all_by_year" onclick="GetChartData('y')">Years</label>
+              <input id="all_by_months" name="view-m" type="radio">
+              <label for="all_by_months" onclick="GetChartData('m')">Months</label>
+              <input id="last_12_months" name="view-12m" type="radio">
+              <label for="last_12_months" onclick="GetChartData('l12m')">Last 12 Months</label>
+              <input id="last_3_months" name="view-3m" type="radio">
+              <label for="last_3_months" onclick="GetChartData('l3m')">Last 3 Months</label>
+              <a></a>
+            </div>
+          </fieldset>
+        </div>
+        <div id="container_balance" style="width:100%; height:600px;"></div>
     </div>
-  </fieldset>
-</div>
-<div id="container" style="width:100%; height:600px;"></div>
-<div class="row">
-  <div class="six columns">
-  </div>
-  <div class="six columns">
-    <fieldset>
-      <legend>Show transactions by</legend>
-      <div class="switch-toggle switch-candy switch-candy-blue">
-        <input id="tags" name="view-t" type="radio">
-        <label for="tags" onclick="GetTagData()">Tags</label>
-        <input id="category" name="view-c" type="radio">
-        <label for="category" onclick="GetCategoryData()">Category</label>
-        <input id="subcategory" name="view-s" type="radio">
-        <label for="subcategory" onclick="GetSubcategoryData()">Subcategory</label>
-        <a></a>
-      </div>
-    </fieldset>
-  </div>
-</div>
 
-<div id="container_stacked_bar_chart" style="width:100%; height:800px;"></div>
-<div id="container_pie_chart" style="width:100%; height:600px;"></div>
-<div id="container_area_chart" style="width:100%; height:600px;"></div>
+    <div class="docs-section">
+      <div class="row">
+        <div class="six columns">
+        </div>
+        <div class="six columns">
+          <fieldset>
+            <legend>Show transactions by</legend>
+            <div class="switch-toggle switch-candy switch-candy-blue">
+              <input id="tags" name="view-t" type="radio">
+              <label for="tags" onclick="GetTagData()">Tags</label>
+              <input id="category" name="view-c" type="radio">
+              <label for="category" onclick="GetCategoryData()">Category</label>
+              <input id="subcategory" name="view-s" type="radio">
+              <label for="subcategory" onclick="GetSubcategoryData()">Subcategory</label>
+              <a></a>
+            </div>
+          </fieldset>
+        </div>
+      </div>
+    </div>
+
+    <div class="docs-section">
+      <div id="container_stacked_bar_chart" style="width:100%; height:800px;"></div>
+    </div>
+
+    <div class="docs-section">
+      <div id="container_pie_chart" style="width:100%; height:600px;"></div>
+    </div>
+
+    <div class="docs-section">
+      <div id="container_area_chart" style="width:100%; height:600px;"></div>
+    </div>
+
+    <div class="docs-section">
+      <h5>Filter Transactions</h5>
+      <div class="row">
+          <div class="three columns">
+              <input id="date_from" name="date_from" class="dtpick", type="text", placeholder="date from">
+          </div>
+          <div class="three columns">
+              <input id="date_to" name="date_to" class="dtpick", type="text", placeholder=" date till">
+          </div>
+          <div class="three columns">
+            <input id="amount_ge" name="amount_ge" class="u-full-width", type="text", placeholder="amount greater than">
+          </div>
+          <div class="three columns">
+            <input id="amount_le" name="amount_le" class="u-full-width", type="text", placeholder="amount less than">
+          </div>
+      </div>
+      <div class="row">
+          <div class="three columns">
+            <input id="type_like" name="type_like" class="u-full-width", type="text", placeholder="NotImplemented">
+          </div>
+          <div class="three columns">
+            <input id="category_like" name="category_like" class="u-full-width", type="text", placeholder="category">
+          </div>
+          <div class="three columns">
+            <input id="tags_like" name="tags_like" class="u-full-width", type="text", placeholder="tags">
+          </div>
+          <div class="three columns">
+            <input id="description_like" name="description_like" class="u-full-width", type="text", placeholder="description">
+          </div>
+      </div>
+      <div class="row">
+        <div class="twelve columns">
+          <button class="button-primary" onclick="GetFilteredData()">Filter</button>
+          <button class="button-primary" onclick="ClearFilterFields()">Clear</button>
+        </div>
+      </div>
+    </div>
+
+</div>
 
 <script>
 
@@ -237,7 +294,7 @@
     }
 
     // draw chart
-    $('#container').highcharts({
+    $('#container_balance').highcharts({
 
     chart: {
         type: "line",
@@ -392,7 +449,7 @@
                easing: 'easeOutQuad'
            },
           size: '90%',
-          innerSize: '55%',
+          innerSize: '80%',
           colorByPoint: true,
           data: pieChartData
         }]
@@ -615,44 +672,7 @@
 
 </script>
 
-<section class="header">
-<h6 class="docs-header transaction-overview">Filter Your Transactions</h6>
-    <div class="container">
-      <div class="row">
-          <div class="three columns">
-              <input id="date_from" name="date_from" class="dtpick", type="text", placeholder="date from">
-          </div>
-          <div class="three columns">
-              <input id="date_to" name="date_to" class="dtpick", type="text", placeholder=" date till">
-          </div>
-          <div class="three columns">
-            <input id="amount_ge" name="amount_ge" class="u-full-width", type="text", placeholder="amount greater than">
-          </div>
-          <div class="three columns">
-            <input id="amount_le" name="amount_le" class="u-full-width", type="text", placeholder="amount less than">
-          </div>
-      </div>
-      <div class="row">
-          <div class="three columns">
-            <input id="type_like" name="type_like" class="u-full-width", type="text", placeholder="NotImplemented">
-          </div>
-          <div class="three columns">
-            <input id="category_like" name="category_like" class="u-full-width", type="text", placeholder="category">
-          </div>
-          <div class="three columns">
-            <input id="tags_like" name="tags_like" class="u-full-width", type="text", placeholder="tags">
-          </div>
-          <div class="three columns">
-            <input id="description_like" name="description_like" class="u-full-width", type="text", placeholder="description">
-          </div>
-      </div>
-      <div class="row">
-        <div class="twelve columns">
-          <button class="button-primary" onclick="GetFilteredData()">Filter</button>
-          <button class="button-primary" onclick="ClearFilterFields()">Clear</button>
-        </div>
-      </div>
-    </div>
-</section>
+
+
 
 {% endblock %}
