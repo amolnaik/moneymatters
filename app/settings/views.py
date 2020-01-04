@@ -89,6 +89,9 @@ def get_spent(df_current, average_income, account):
         if average_income > 0:
             tag_this_month_percent = \
                 (tag_this_month*100)/average_income
+        else:
+            # todo:needs more logical default
+            tag_this_month_percent = 0
 
         # this months spent in last category
         this_category = df_current.loc[df_current.date
