@@ -142,10 +142,15 @@ def get_spent(df_current, average_income, account):
                         (subcategory_this_month*100)/average_income
                 else:
                     subcategory_this_month_percent = 0
-
+    # check for Nan
+    if (spent_this_month*100)/(average_income) is np.Nan:
+        spentNotNan = (spent_this_month*100)/(average_income)
+    else:
+        spentNotNan = 0
+        
     return json.dumps({
     'expense': {'total': 100,
-                 'spent': (spent_this_month*100)/(average_income),
+                 'spent': spentNotNan,
                  'budget': 75},
     'tag': {'name': this_tag,
             'total': 100,
