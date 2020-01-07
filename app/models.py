@@ -722,7 +722,7 @@ class Transaction(db.Model, BaseModel):
 class CategorySettings(db.Model, BaseModel):
 
     __tablename__ = 'category_settings'
-    __table_args__ = (UniqueConstraint('category', name='unique_categoryname'),)
+    __table_args__ = (UniqueConstraint('account_id','category', name='unique_categoryname'),)
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     account_id = db.Column(db.Integer, db.ForeignKey('account.id'))
@@ -836,7 +836,7 @@ class CategorySettings(db.Model, BaseModel):
 class SubCategorySettings(db.Model, BaseModel):
 
     __tablename__ = 'subcategory_settings'
-    __table_args__ = (UniqueConstraint('subcategory', name='unique_subcategoryname'),)
+    __table_args__ = (UniqueConstraint('account_id','subcategory', name='unique_subcategoryname'),)
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     account_id = db.Column(db.Integer, db.ForeignKey('account.id'))

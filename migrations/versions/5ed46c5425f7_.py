@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: ffd0162b4ff2
+Revision ID: 5ed46c5425f7
 Revises: fae567b22d88
-Create Date: 2019-07-07 16:09:01.355721
+Create Date: 2020-01-07 23:12:06.134126
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'ffd0162b4ff2'
+revision = '5ed46c5425f7'
 down_revision = 'fae567b22d88'
 branch_labels = None
 depends_on = None
@@ -29,7 +29,7 @@ def upgrade():
     sa.Column('apply', sa.Boolean(), nullable=True),
     sa.ForeignKeyConstraint(['account_id'], ['account.id'], ),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('category', name='unique_categoryname')
+    sa.UniqueConstraint('account_id', 'category', name='unique_categoryname')
     )
     op.create_table('subcategory_settings',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -42,7 +42,7 @@ def upgrade():
     sa.Column('apply', sa.Boolean(), nullable=True),
     sa.ForeignKeyConstraint(['account_id'], ['account.id'], ),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('subcategory', name='unique_subcategoryname')
+    sa.UniqueConstraint('account_id', 'subcategory', name='unique_subcategoryname')
     )
     op.drop_constraint(u'unique_transactions', 'transaction', type_='unique')
     op.create_unique_constraint('unique_transactions', 'transaction', ['date', 'amount', 'type', 'description', 'category', 'subcategory'])
