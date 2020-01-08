@@ -28,7 +28,7 @@ def get_data_for_bullets(name):
 
     # check if user has sufficient transaction history
     if df.empty:
-        print ("user does not sufficient transaction history")
+        print ("user does not have sufficient transaction history")
         results = get_spent(pd.DataFrame(columns = cols), 0, account)
     else:
         df['date'] = pd.to_datetime(df['date'])
@@ -143,11 +143,11 @@ def get_spent(df_current, average_income, account):
                 else:
                     subcategory_this_month_percent = 0
     # check for Nan
-    if (spent_this_month*100)/(average_income) is np.Nan:
+    if (spent_this_month*100)/(average_income) is np.nan:
         spentNotNan = (spent_this_month*100)/(average_income)
     else:
         spentNotNan = 0
-        
+
     return json.dumps({
     'expense': {'total': 100,
                  'spent': spentNotNan,
