@@ -119,11 +119,37 @@
 
 	<script>
 
-		var dateEditor = function(cell, onRendered, success, cancel){
+	var categories = {};
+	$.get("{{ url_for('main.get_categories', name=account.name) }}",
+		function(data, status){
+			var cats = JSON.parse(data)
+			for (var i = 0; i < cats.length; i++) {
+					categories[cats[i]] = cats[i];
+			}
+			console.log(categories)
+	});
+
+	var subcategories = {};
+	$.get("{{ url_for('main.get_subcategories', name=account.name) }}",
+		function(data, status){
+			var subcats = JSON.parse(data)
+			for (var i = 0; i < subcats.length; i++) {
+					subcategories[subcats[i]] = subcats[i];
+			}
+			console.log(subcategories)
+	});
+
+	var dateEditor = function(cell, onRendered, success, cancel){
 		    //cell - the cell component for the editable cell
 		    //onRendered - function to call when the editor has been rendered
 		    //success - function to call to pass the successfuly updated value to Tabulator
 		    //cancel - function to call to abort the edit and return to a normal cell
+				var categories;
+
+				$.get("{{ url_for('main.get_categories', name=account.name) }}",
+					function(data, status){
+						categories = data;
+				});
 
 		    //create and style editor
 		    var editor = $("<input type='date'></input>");
@@ -152,7 +178,6 @@
 		    return editor;
 		};
 
-
 	function removeActiveFilter(filters, field, type){
 		if(filters.some(e => e.field == field)){
 			i = $.map(filters, function(obj, index){
@@ -164,7 +189,6 @@
 		}
 	}
 
-	//Trigger setFilter function with correct parameters
 	function updateFilter(){
 			if($("#filter-amount-ge-value").val()) {
 					removeActiveFilter($("#example-table3").tabulator("getFilters"), "amount", ">")
@@ -228,7 +252,6 @@
 
 	$("#filter-set").click(updateFilter);
 
-	//Delete row on "Delete Row" button click
 	$("#del-row").click(function(){
 	    //$("#example-table3").tabulator("deleteRow", 1);
 			//console.log(document.getElementById("del-row").value)
@@ -251,7 +274,6 @@
 
 	});
 
-	//Clear filters on "Clear Filters" button click
 	$("#filter-clear").click(function(){
 	    $("#filter-from-value").val("");
 			$("#filter-to-value").val("");
@@ -266,11 +288,9 @@
 	    $("#example-table3").tabulator("clearFilter");
 	});
 
-	//Build Tabulator
 	$("#example-table3").tabulator({
 
 			height:"100%",
-			//layout:"fitColumns",
 			history:true,
 			index: "tid",
 			tooltips:false,
@@ -279,15 +299,26 @@
 			paginationSize:20,
 			selectable:true,
 	    columns:[
-					// put id field here to pass back to server
 				  { title:"Date", field:"date", editor:dateEditor, formatter:function(cell, formatterParams){
 		        //cell - the cell component
 		        //formatterParams - parameters set for the column
 						return moment.utc(cell.getValue()).format("DD/MM/YYYY"); //return the contents of the cell;
 	    		},},
 	        {title:"Amount", field:"amount", editor:'number', formatter:"money", bottomCalc:"sum", bottomCalcParams:{precision:2}},
-	        {title:"Category", field:"category", editor:'input'},
-					{title:"Subcategory", field:"subcategory", editor:'input'},
+	        {title:"Category", field:"category", editor:'select', editorParams:function(cell){
+						if (categories) {
+							return categories
+						}
+						else{
+							return {"key1": "value1", "key2": "value2"}
+						}},},
+					{title:"Subcategory", field:"subcategory", editor:'select', editorParams:function(cell){
+						if (subcategories) {
+							return subcategories
+						}
+						else{
+							return {"key1": "value1", "key2": "value2"}
+					 }},},
 	        {title:"Description", field:"description", editor:'input'},
 	        {title:"Payee", field:"payee", editor:'input'},
 	        {title:"Status", field:"status", editor: true, formatter:"tickCross"},
@@ -342,7 +373,7 @@
 		            }
 		        });
 
-						$("#example-table3").tabulator("setSort", "date", "desc");
+						//$("#example-table3").tabulator("setSort", "date", "desc");
 	    },
 
 	});
@@ -353,12 +384,10 @@
 	    $("#example-table3").tabulator("download", "json", "data.json");
 	});
 
-	//undo button
 	$("#history-undo").on("click", function(){
 	   $("#example-table3").tabulator("undo");
 	});
 
-	//redo button
 	$("#history-redo").on("click", function(){
 	   $("#example-table3").tabulator("redo");
 	});

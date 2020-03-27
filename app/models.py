@@ -158,6 +158,9 @@ class Account(db.Model, BaseModel):
     scheduled_transactions = db.relationship('ScheduledTransaction',
                                              backref='account', lazy='dynamic')
 
+    # one account can have many db transactions
+    dbtransactions = db.relationship('DbTransaction', backref='account', lazy='dynamic')
+
     # one account can have many category types
     #category_types = db.relationship('CategoryType', backref='account',
     #                             lazy='dynamic')
@@ -240,7 +243,7 @@ class Account(db.Model, BaseModel):
     # additional operations/methods to follow...
     @property
     def total_transactions_count(self):
-        return self.transactions.order_by(None).count()
+        return self.transactions.count()
 
     @property
     def completed_transactions_count(self):
@@ -555,11 +558,10 @@ class Transaction(db.Model, BaseModel):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     account_id = db.Column(db.Integer, db.ForeignKey('account.id'))
-    # _date = db.Column('date', db.DateTime, default=datetime.utcnow, nullable=False)
+
     _date = db.Column('date', db.DateTime, index=True, default=datetime.utcnow, nullable=False)
     _amount = db.Column('amount', db.Float, nullable=False)
     _type = db.Column('type', db.String(128))
-    # type_id = db.Column(db.Integer, db.ForeignKey('transactiontype.id'), nullable=True)
     _description = db.Column('description', db.String(128), nullable=True)
     _category = db.Column('category', db.String(128), nullable=True)
     _subcategory = db.Column('subcategory', db.String(128), nullable=True)
@@ -582,7 +584,6 @@ class Transaction(db.Model, BaseModel):
         self.status = status
         self.payee = payee
 
-    # type = db.relationship('TransactionType', foreign_keys=type_id)
 
     def __repr__(self):
         return '<Transaction: Date {0}, Amount {1}, Description {2}, Status {3}>'.format(self.date, self.amount, self.description, self.status)
@@ -944,4 +945,107 @@ class SubCategorySettings(db.Model, BaseModel):
             'avg_month': self.avg_month,
             'unit': self.unit,
             'apply': self.apply
+        }
+
+
+class DbTransaction(db.Model, BaseModel):
+
+    __tablename__ = 'dbtransaction'
+    #__table_args__ = (UniqueConstraint('account_id','date', 'amount', 'type', 'description', 'beneficiary', name='unique_dbtransactions'),)
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    account_id = db.Column(db.Integer, db.ForeignKey('account.id'))
+    _date = db.Column('date', db.DateTime, index=True, default=datetime.utcnow, nullable=False)
+    _amount = db.Column('amount', db.Float, nullable=False)
+    _type = db.Column('type', db.String(128))
+    _description = db.Column('description', db.String(128), nullable=True)
+    _beneficiary = db.Column('beneficiary', db.String(128), nullable=True)
+
+    def __init__(self, accountid, date=None, amount=None, type=None, description=None, beneficiary=None):
+
+        self.account_id = accountid
+        self.date = date
+        self.amount = amount
+        self.type = type
+        self.description = description
+        self.beneficiary = beneficiary
+
+    def __repr__(self):
+        return '<Transaction: Date {0}, Amount {1}, Description {2}, beneficiary {3}>'.format(self.date, self.amount, self.description, self.beneficiary)
+
+    @property
+    def date(self):
+        return self._date #.date()
+
+    @date.setter
+    def date(self, date):
+        if not (datetime(1900, 1, 1).date() <= date <= datetime(2100, 12, 31).date()):
+            self._date = datetime.today().date()
+        else:
+            self._date = date
+
+    date = synonym('_date', descriptor=date)
+
+    @property
+    def amount(self):
+        return self._amount
+
+    @amount.setter
+    def amount(self, amount):
+        if not isinstance(amount, numbers.Number):
+            self._amount = 0.00
+        else:
+            self._amount = amount
+
+    amount = synonym('_amount', descriptor=amount)
+
+    @property
+    def type(self):
+        return self._type
+
+    @type.setter
+    def type(self, type):
+        if not check_length(type, 128):
+            self._type = 'not provided'
+        else:
+            self._type = type
+
+    type = synonym('_type', descriptor=type)
+
+    @property
+    def description(self):
+        return self._description
+
+    @description.setter
+    def description(self, description):
+        if not check_length(description, 128):
+            self._description = 'not provided'
+        else:
+            self._description = description
+
+    description = synonym('_description', descriptor=description)
+
+    @property
+    def beneficiary(self):
+        return self._beneficiary
+
+    @beneficiary.setter
+    def beneficiary(self, beneficiary):
+        if not check_length(beneficiary, 128):
+            self._beneficiary = 'not provided'
+        else:
+            self._beneficiary = beneficiary
+
+    beneficiary = synonym('_beneficiary', descriptor=beneficiary)
+
+
+    def to_dict(self):
+        return {
+            'tid': self.id,
+            'accountid' : self.account_id,
+            'date': self.date,
+            'amount': self.amount,
+            'type': self.type,
+            'description': self.description,
+            'beneficiary': self.beneficiary
         }

@@ -86,7 +86,7 @@ def get_spent(df_current, average_income, account):
         tag_this_month = abs(df_current[df_current.tag
                             == this_tag].amount.sum())
 
-        if average_income > 0:
+        if (average_income != np.nan) & (tag_this_month != np.nan):
             tag_this_month_percent = \
                 (tag_this_month*100)/average_income
         else:

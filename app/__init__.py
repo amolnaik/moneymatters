@@ -8,6 +8,7 @@ from flask_sqlalchemy import SQLAlchemy
 from config import config
 from flask_session import Session
 
+
 db = SQLAlchemy()
 migrate = Migrate()
 
@@ -25,8 +26,8 @@ def create_app(config_name):
 
     db.init_app(app)
 
+
     migrate = Migrate(app, db=db)
-    #Session(app)
 
     login_manager.init_app(app)
 

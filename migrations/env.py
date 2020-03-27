@@ -2,6 +2,8 @@ from __future__ import with_statement
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 from logging.config import fileConfig
+from logging.handlers import RotatingFileHandler
+
 import logging
 
 # this is the Alembic Config object, which provides
@@ -11,7 +13,9 @@ config = context.config
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 fileConfig(config.config_file_name)
+handler = RotatingFileHandler('migration.log', maxBytes=1000, backupCount=1)
 logger = logging.getLogger('alembic.env')
+logger.addHandler(handler)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
@@ -40,6 +44,7 @@ def run_migrations_offline():
     script output.
 
     """
+    logger.info('offline migration')
     url = config.get_main_option("sqlalchemy.url")
     context.configure(url=url)
 
@@ -58,6 +63,8 @@ def run_migrations_online():
     # this callback is used to prevent an auto-migration from being generated
     # when there are no changes to the schema
     # reference: http://alembic.zzzcomputing.com/en/latest/cookbook.html
+    logger.info('online migration')
+
     def process_revision_directives(context, revision, directives):
         if getattr(config.cmd_opts, 'autogenerate', False):
             script = directives[0]
@@ -76,10 +83,12 @@ def run_migrations_online():
                       **current_app.extensions['migrate'].configure_args)
 
     try:
+        logger.info('running migration')
         with context.begin_transaction():
             context.run_migrations()
     finally:
         connection.close()
+
 
 if context.is_offline_mode():
     run_migrations_offline()

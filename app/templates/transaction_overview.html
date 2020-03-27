@@ -66,21 +66,6 @@
 
 		<div class="docs-section">
 
-			<!--div class="row">
-				<div class="six columns">
-						<div class="tabs">
-						  <div class="tab-2">
-						    <label for="tab_for_total">Total</label>
-						    <input id="tab_for_total" name="tabs-two" type="radio" checked="checked" onClick="toggle_bullets()">
-						  </div>
-						  <div class="tab-2">
-						    <label for="tab_for_split">Split</label>
-						    <input id="tab_for_split" name="tabs-two" type="radio" onClick="toggle_bullets()">
-						  </div>
-						</div>
-				</div>
-			</div-->
-
 			<div class="row">
 				  <div class="six columns">
 						<div id="container1" style="width:100%; height:300px; display:block"></div>
@@ -148,48 +133,6 @@
 	        </div>
 			</div>
 		</div>
-
-		<!--div class="docs-section">
-				<div class="row">
-						<h5>New Transaction</h5>
-						<div id = "transactionform">
-							{% for field in form.errors %}
-								{% for error in form.errors[field] %}
-										<div class="alert alert-error">
-												<strong>{{field }}</strong> {{error}}.
-										</div>
-								{% endfor %}
-							{% endfor %}
-
-							<form action="{{ url_for('main.account', name=account.name) }}" method="post">
-									{{ form.hidden_tag() }}
-								<div class="row">
-									<div class="three columns">
-											{{ form.date(class_='dtpick u-full-width',placeholder="date") }}
-									</div>
-									<div class="three columns">
-											{{ form.amount(class_="u-full-width", placeholder="amount", value="") }}
-											{{ form.subcategory(class_="u-full-width", placeholder="subcategory", value="") }}
-											{{ form.description(class_="u-full-width", placeholder="description", value="") }}
-									</div>
-									<div class="three columns">
-											{{ form.type(class_="u-full-width",placeholder="type") }}
-											{{ form.payee(class_="u-full-width", placeholder="payee", value="") }}
-											<label class="status">
-											 {{ form.status() }}
-											 <span class="label-body"> Completed</span>
-											</label>
-									</div>
-									<div class="three columns">
-											{{ form.category(class_="u-full-width",placeholder="category", value="") }}
-											{{ form.tag(class_="u-full-width", placeholder="tag", value="") }}
-											{{ form.submit(class="button-primary u-full-width", value="Add") }}
-									</div>
-								</div>
-							</form>
-						</div>
-				</div>
-		</div-->
 
 		<div class="docs-section">
 		  <div class="u-full-width">
