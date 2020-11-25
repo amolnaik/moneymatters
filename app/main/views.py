@@ -681,7 +681,7 @@ def set_data(name):
         t.payee = data.get('payee')
         t.status = True if data.get('status') == True else False
         t.type = data.get('type')
-        t.tag = data.get('tag')
+        t.tag = data.get('tag').lstrip()
         db.session.commit()
         redirect(url_for('main.set_data', name=name))
 

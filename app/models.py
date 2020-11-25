@@ -1019,7 +1019,7 @@ class DbTransaction(db.Model, BaseModel):
     @description.setter
     def description(self, description):
         if not check_length(description, 128):
-            self._description = 'not provided'
+            self._description = ''
         else:
             self._description = description
 
@@ -1032,7 +1032,7 @@ class DbTransaction(db.Model, BaseModel):
     @beneficiary.setter
     def beneficiary(self, beneficiary):
         if not check_length(beneficiary, 128):
-            self._beneficiary = 'not provided'
+            self._beneficiary = ''
         else:
             self._beneficiary = beneficiary
 

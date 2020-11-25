@@ -7,7 +7,7 @@ from logging.handlers import RotatingFileHandler
 from app import db
 
 
-app = create_app('development')
+app = create_app('production')
 
 
 @app.cli.command()

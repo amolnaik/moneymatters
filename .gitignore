@@ -10,4 +10,5 @@ obsolete/
 *.db
 *.ipynb
 *.yml
+*.log
 application.py

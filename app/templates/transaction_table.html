@@ -117,26 +117,26 @@
 		</div>
 	</div>
 
-	<script>
+<script>
 
 	var categories = {};
 	$.get("{{ url_for('main.get_categories', name=account.name) }}",
 		function(data, status){
 			var cats = JSON.parse(data)
-			for (var i = 0; i < cats.length; i++) {
-					categories[cats[i]] = cats[i];
+			cats_ = cats.sort();
+			for (var i = 0; i < cats_.length; i++) {
+					categories[cats_[i]] = cats_[i];
 			}
-			console.log(categories)
 	});
 
 	var subcategories = {};
 	$.get("{{ url_for('main.get_subcategories', name=account.name) }}",
 		function(data, status){
 			var subcats = JSON.parse(data)
-			for (var i = 0; i < subcats.length; i++) {
-					subcategories[subcats[i]] = subcats[i];
+			subcats_ = subcats.sort();
+			for (var i = 0; i < subcats_.length; i++) {
+					subcategories[subcats_[i]] = subcats_[i];
 			}
-			console.log(subcategories)
 	});
 
 	var dateEditor = function(cell, onRendered, success, cancel){
