@@ -25,10 +25,13 @@ def get_chart_data(name):
         df['year'] = df['date'].dt.year
         df['month'] = df['date'].dt.month
         df['yearmonth'] = df['date'].apply(lambda x: x.strftime('%Y-%m'))
+        # identify expense or Income
+        df['nature'] = np.where(df['amount'] >0, 'income', 'outgo')
         # good place to add column for closing balance
         df['closing_balance'] = df.amount.cumsum() + account.balance
 
-    df_filtered = filterdata(df, request)
+    #df_filtered = filterdata(df, request)
+    df_filtered = df[df.nature == 'outgo']
     set_frequency = request.args.get('frequency', '', type=str)
 
     if set_frequency == 'm':
