@@ -623,7 +623,8 @@ def data(name):
         df = pd.DataFrame.from_dict(transactions)
         df['date'] = pd.to_datetime(df['date'])
         df = df.sort_values(by='date', ascending=False)
-
+        # remove white spaces from tags
+        df['tag'] = df['tag'].str.strip()
         df['closing_balance'] = df.amount.cumsum() + account.balance
     except:
         print ("some error!s")

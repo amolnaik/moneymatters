@@ -26,9 +26,11 @@ def get_chart_data(name):
         df['month'] = df['date'].dt.month
         df['yearmonth'] = df['date'].apply(lambda x: x.strftime('%Y-%m'))
         # identify expense or Income
-        df['nature'] = np.where(df['amount'] >0, 'income', 'outgo')
+        df['nature'] = np.where(df['amount'] > 0, 'income', 'outgo')
         # good place to add column for closing balance
         df['closing_balance'] = df.amount.cumsum() + account.balance
+        # remove white spaces from tags
+        df['tag'] = df['tag'].str.strip()
 
     #df_filtered = filterdata(df, request)
     df_filtered = df[df.nature == 'outgo']
